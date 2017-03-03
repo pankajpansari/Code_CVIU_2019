@@ -32,67 +32,61 @@
 
 // The filter in the dense CRF can be normalized in a few different ways
 enum NormalizationType {
-    NO_NORMALIZATION,    // No normalization whatsoever (will lead to a substantial approximation error)
-    NORMALIZE_BEFORE,    // Normalize before filtering (Not used, just there for completeness)
-    NORMALIZE_AFTER,     // Normalize after filtering (original normalization in NIPS 11 work)
-    NORMALIZE_SYMMETRIC, // Normalize before and after (ICML 2013, low approximation error and preserves the symmetry of CRF)
+	NO_NORMALIZATION,    // No normalization whatsoever (will lead to a substantial approximation error)
+	NORMALIZE_BEFORE,    // Normalize before filtering (Not used, just there for completeness)
+	NORMALIZE_AFTER,     // Normalize after filtering (original normalization in NIPS 11 work)
+	NORMALIZE_SYMMETRIC, // Normalize before and after (ICML 2013, low approximation error and preserves the symmetry of CRF)
 };
 enum KernelType {
-    CONST_KERNEL,   // Constant kernel, no parameters
-    DIAG_KERNEL,    // Diagonal kernel (scaling features)
-    FULL_KERNEL,    // Full kernel matrix (arbitrary squared matrix)
+	CONST_KERNEL,   // Constant kernel, no parameters
+	DIAG_KERNEL,    // Diagonal kernel (scaling features)
+	FULL_KERNEL,    // Full kernel matrix (arbitrary squared matrix)
 };
 
 class Kernel {
 public:
-    virtual ~Kernel();
-    virtual void apply( MatrixXf & out, const MatrixXf & Q ) const = 0;
-    virtual void applyTranspose( MatrixXf & out, const MatrixXf & Q ) const = 0;
-    virtual void apply_upper_minus_lower_dc( MatrixXf & out, int low, int middle_low, 
-            int middle_high, int high) const = 0;
-    virtual void apply_upper_minus_lower_ord( MatrixXf & out, const MatrixXf & Q) = 0;
-    virtual void apply_upper_minus_lower_ord_restricted(MatrixXf & rout, const MatrixXf & rQ, 
-        const std::vector<int> & pI, const MatrixXf & Q, const bool store) = 0;
-    virtual VectorXf parameters() const = 0;
-    virtual void setParameters( const VectorXf & p ) = 0;
-    virtual VectorXf gradient( const MatrixXf & b, const MatrixXf & Q ) const = 0;
-    virtual MatrixXf const & features() const = 0;
+	virtual ~Kernel();
+	virtual void apply( MatrixXf & out, const MatrixXf & Q ) const = 0;
+	virtual void applyTranspose( MatrixXf & out, const MatrixXf & Q ) const = 0;
+    virtual void apply_upper_minus_lower_dc( MatrixXf & out, int low, int middle_low, int middle_high, int high) const = 0;
+    virtual void apply_upper_minus_lower_ord( MatrixXf & out, const MatrixXf & Q) const = 0;
+    virtual void apply_upper_minus_lower_ord_cont( MatrixXf & out, const MatrixXf & Q) const = 0;
+	virtual VectorXf parameters() const = 0;
+	virtual void setParameters( const VectorXf & p ) = 0;
+	virtual VectorXf gradient( const MatrixXf & b, const MatrixXf & Q ) const = 0;
+	virtual MatrixXf const & features() const = 0;
     virtual KernelType ktype() const = 0;
     virtual NormalizationType ntype() const = 0;
 };
 
 class PairwisePotential{
 protected:
-    LabelCompatibility * compatibility_;
-    Kernel * kernel_;
-    PairwisePotential( const PairwisePotential &o ){}
-    void filter( MatrixXf & out, const MatrixXf & in, bool transpose=false ) const;
+	LabelCompatibility * compatibility_;
+	Kernel * kernel_;
+	PairwisePotential( const PairwisePotential &o ){}
+	void filter( MatrixXf & out, const MatrixXf & in, bool transpose=false ) const;
 public:
-    virtual ~PairwisePotential();
-    PairwisePotential(const MatrixXf & features, LabelCompatibility * compatibility, 
-            KernelType ktype=CONST_KERNEL, NormalizationType ntype=NORMALIZE_SYMMETRIC);
-    // full-matrix 
+	virtual ~PairwisePotential();
+	PairwisePotential(const MatrixXf & features, LabelCompatibility * compatibility, KernelType ktype=CONST_KERNEL, NormalizationType ntype=NORMALIZE_SYMMETRIC);
     void apply(MatrixXf & out, const MatrixXf & Q) const;
-    void applyTranspose(MatrixXf & out, const MatrixXf & Q) const;
-    // upper-traingular minus lower-triangluar: divide-and-conquer (ECCV-16) 
+    void apply_bf(MatrixXf & out, const MatrixXf & Q) const;	// brute-force
+    void apply_upper_minus_lower_ord(MatrixXf & out, const MatrixXf & Q) const;
+    void apply_upper_minus_lower_ord_cont(MatrixXf & out, const MatrixXf & Q) const;
     void apply_upper_minus_lower_dc(MatrixXf & out, const MatrixXi & ind) const;
+    void apply_upper_minus_lower_bf(MatrixXf & out, const MatrixXi & ind) const;	// brute-force
+	void applyTranspose(MatrixXf & out, const MatrixXf & Q) const;
     void apply_upper_minus_lower_sorted_slice(MatrixXf & out, int min, int max) const;
-    // upper-traingular minus lower-triangluar: new implementation (arxiv-17)
-    void apply_upper_minus_lower_ord(MatrixXf & out, const MatrixXf & Q);
-    void apply_upper_minus_lower_ord_restricted(MatrixXf & rout, const MatrixXf & rQ,  
-        const std::vector<int> & pI, const MatrixXf & Q, const bool store); // works on subset of pixels
-	 void apply_upper_minus_lower_bf_ord(MatrixXf & out, const MatrixXi & ind, const MatrixXf & Q) const;
- 
-   // Get the parameters
-    virtual VectorXf parameters() const;
-    virtual VectorXf kernelParameters() const;
-    virtual MatrixXf features() const;
+	
+	// Get the parameters
+	virtual VectorXf parameters() const;
+	virtual VectorXf kernelParameters() const;
+	virtual MatrixXf features() const;
     virtual KernelType ktype() const;
     virtual NormalizationType ntype() const;
     virtual Kernel* getKernel() const;
-    virtual MatrixXf compatibility_matrix(int nb_labels) const;
-    virtual void setParameters( const VectorXf & v );
-    virtual void setKernelParameters( const VectorXf & v );
-    virtual VectorXf gradient( const MatrixXf & b, const MatrixXf & Q ) const;
-    virtual VectorXf kernelGradient( const MatrixXf & b, const MatrixXf & Q ) const;
+	virtual MatrixXf compatibility_matrix(int nb_labels) const;
+	virtual void setParameters( const VectorXf & v );
+	virtual void setKernelParameters( const VectorXf & v );
+	virtual VectorXf gradient( const MatrixXf & b, const MatrixXf & Q ) const;
+	virtual VectorXf kernelGradient( const MatrixXf & b, const MatrixXf & Q ) const;
 };
