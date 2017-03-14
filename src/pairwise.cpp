@@ -131,6 +131,7 @@ public:
 		filter_upper_minus_lower_dc(out, low, middle_low, middle_high, high);
 	}
 	virtual void apply_upper_minus_lower_ord( MatrixXf & out, const MatrixXf & Q) const {
+               // std::cout << Q << std::endl;
 		filter_upper_minus_lower_ord(out, Q);
 	}
 	virtual void apply_upper_minus_lower_ord_cont( MatrixXf & out, const MatrixXf & Q) const {

@@ -95,6 +95,7 @@ void DenseCRF::addPairwiseEnergy ( PairwisePotential* potential ){
             new PottsCompatibility(potential->parameters()(0)),
             potential->ktype(),
             NO_NORMALIZATION) );
+//            NORMALIZE_AFTER));
 }
 
 void DenseCRF2D::addPairwiseGaussian ( float sx, float sy, LabelCompatibility * function, 
@@ -1017,7 +1018,7 @@ MatrixXf DenseCRF::lp_inference_prox_restricted(MatrixXf & init, LP_inf_params &
                 // new PH implementation
                 // rescaled_Q values in the range [0,1] --> but the same order as Q! --> subgradient of Q
                 bool store = (pit == 1); // store only at the first iteration
-                pairwise_[k]->apply_upper_minus_lower_ord_restricted(rtmp, rescaled_rQ, pI, Q, store);  
+//                pairwise_[k]->apply_upper_minus_lower_ord_restricted(rtmp, rescaled_rQ, pI, Q, store);  
 
                 s_tQ += rtmp;   // A * s is lower minus upper, keep neg introduced by compatibility->apply
 #if VERBOSE

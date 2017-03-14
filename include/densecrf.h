@@ -113,16 +113,21 @@ public:
 
  // Run the submodular inference algorithm
 float computeGaussianWeight(const VectorXf & feature_a, const VectorXf & feature_b);
-float submodularF(std::vector<int> set);
+void getSubmodFnVal(int j, int i, MatrixXf &unary);
+void compareWithBf(MatrixXf &pairwise_filter, MatrixXf & grad);
 MatrixXf submodular_inference(MatrixXf & init, int width, int height);
 void getConditionalGradient(MatrixXf & Qs, MatrixXf & Q);
 MatrixXf getFeatureMat(const unsigned char* im);
 //void greedyAlgorithmBruteForce(MatrixXf & Qs, MatrixXf &Q);
 void greedyAlgorithm(MatrixXf &out, MatrixXf &grad);
-void greedyAlgorithmBruteForce(MatrixXf &out, MatrixXf &grad);
+void greedyAlgorithm_bf(MatrixXf &out, MatrixXf &grad);
+void greedyAlgorithm_dc(MatrixXf &out, MatrixXf &grad);
 void applyBruteForce(MatrixXf & Qs, MatrixXf &Q);
 void applyBruteForceAJ(MatrixXf & Qs, MatrixXf &Q);
 void applyFilter(MatrixXf & Qs, MatrixXf &Q);
+void applyFilter_dc(MatrixXf & Qs, MatrixXf &Q);
+void applyFullBruteForce(MatrixXf &out, MatrixXf &in);
+void applyFullFilter(MatrixXf &out, MatrixXf &in);
 //void compare_filter(MatrixXf & Q, MatrixXf & ph_grad, MatrixXf & bf_grad) const;
   // Perform the rounding based on argmaxes
   MatrixXf max_rounding(const MatrixXf & estimates) const;

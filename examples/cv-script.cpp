@@ -25,7 +25,7 @@ void image_inference(Dataset dataset, std::string method, std::string path_to_re
                              img, new PottsCompatibility(bil_potts));
 
 
-	std::cout << "Method = " << method << std::endl;
+    std::cout << "Method = " << method << std::endl;
     MatrixXf Q;
     {
         std::string path_to_subexp_results = path_to_results + "/" + method + "/";
@@ -129,6 +129,7 @@ int main(int argc, char *argv[])
     std::cout << "Dataset size = " << test_images.size() << std::endl;
 	
     LP_inf_params lp_params;
+
 #pragma omp parallel for
     for(int i=0; i< test_images.size(); ++i){
         image_inference(ds, method, path_to_results, test_images[i], spc_std, spc_potts,

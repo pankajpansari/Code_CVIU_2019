@@ -53,12 +53,17 @@ int main(int argc, char* argv[])
 ////    float bil_colstd = 20;
 ////    float bil_potts = 10;
 //
-    float spc_std = 1;
-    float spc_potts = 7.467846;
-//    float spc_potts = 0;
-    float bil_spcstd = 35.865959;
+//    float spc_std = 1;
+//    float spc_potts = 7.467846;
+//    float bil_spcstd = 35.865959;
+//    float bil_colstd = 11.209644;
+//    float bil_potts = 4.028773;
+    float spc_std = 0.5*1;
+    float spc_potts = 0.5*7.467846;
+    float bil_spcstd = 0.5*35.865959;
     float bil_colstd = 11.209644;
     float bil_potts = 4.028773;
+
 
     DenseCRF2D crf(size.width, size.height, unaries.rows());
     crf.setUnaryEnergy(unaries);

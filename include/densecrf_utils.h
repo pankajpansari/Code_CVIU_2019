@@ -79,7 +79,9 @@ void qp_gamma_multiplyC(VectorXf & v_out, const VectorXf & v_in, const int M, co
 void less_confident_pixels(std::vector<int> & indices, const MatrixXf & Q, float tol = 0.95);
 void update_restricted_matrix(MatrixXf & out, const MatrixXf & in, const std::vector<int> & pindices);
 void update_extended_matrix(MatrixXf & out, const MatrixXf & in, const std::vector<int> & pindices);
+bool fileExists(const std::string& filename);
 float getObj(const MatrixXf & Q);
-float doLineSearch(const MatrixXf & Qs, const MatrixXf & Q);
+float doLineSearch(const MatrixXf & Qs, const MatrixXf & Q, int iter);
 void getNegGradient(MatrixXf & negGrad, const MatrixXf & Q);
 void expAndNormalizeSubmod( MatrixXf & out, const MatrixXf & in);
+void saveCurrentMarginals(MatrixXf &Q, int k);

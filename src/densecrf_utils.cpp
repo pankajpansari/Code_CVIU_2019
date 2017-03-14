@@ -2,7 +2,9 @@
 #include <iostream>
 #include "densecrf_utils.h"
 #include <Eigen/Eigenvalues>
+#include <sys/stat.h>
 
+extern std::string PATH_TO_RESULT;
 /////////////////////////////
 /////  eigen-utils      /////
 /////////////////////////////
@@ -377,10 +379,13 @@ void rescale(MatrixXf & out, const MatrixXf & Q) {
     // don't do label-wise rescaling -> introduces different error in each label!
     // but one rescaling for teh entire matrix
     minval = out.minCoeff();
+//    std::cout << "Min val = " << minval << std::endl;
     out = out.array() - minval;
     maxval = out.maxCoeff();
+ //   std::cout << "Max val = " << maxval << std::endl;
     assert(maxval >= 0);
     if (maxval > 0) out /= maxval;
+  //  std::cout << out << std::endl;
 }
 
 // make a step of qp_gamma: -- \cite{NNQP solver Xiao and Chen 2014} - O(n) implementation!!
@@ -446,12 +451,21 @@ void update_extended_matrix(MatrixXf & out, const MatrixXf & in, const std::vect
 /////////////////////////////
 /////  submodular-utils /////
 /////////////////////////////
+bool fileExists(const std::string& filename)
+{
+    struct stat buf;
+    if (stat(filename.c_str(), &buf) != -1)
+    {
+        return true;
+    }
+    return false;
+}
 
-float doLineSearch(const MatrixXf & Qs, const MatrixXf & Q){
+float doLineSearch(const MatrixXf & Qs, const MatrixXf & Q, int iter){
 
 	//do binary search for line search
 	float rangeStart = 0;
-	float rangeEnd = 1;
+	float rangeEnd = 0.001;
 	float currentStep = (rangeStart + rangeEnd)/2;
         float candidateStep1 = 0, candidateStep2 = 0;
         float obj1 = 0, obj2 = 0;
@@ -459,8 +473,25 @@ float doLineSearch(const MatrixXf & Qs, const MatrixXf & Q){
         MatrixXf Q1 = MatrixXf::Zero(Q.rows(), Q.cols());
         MatrixXf Q2 = MatrixXf::Zero(Q.rows(), Q.cols());
 
-	for(int binaryIter = 0; binaryIter <= 10; binaryIter++){	
+        //create file
+        std::ofstream stepFile;
+        if(fileExists(PATH_TO_RESULT + "/step.txt") == true)
+            stepFile.open(PATH_TO_RESULT + "/step.txt", std::ios_base::app);
+        else if(fileExists(PATH_TO_RESULT + "/step.txt") == false)
+            stepFile.open(PATH_TO_RESULT + "/step.txt");
 
+        //loop through step sizes
+//        for(float stepSize = 0; stepSize <= 0.001; stepSize = stepSize + 0.00001) {
+//        for(float stepSize = 0; stepSize <= 1; stepSize = stepSize + 0.01) {
+//                Q1 = (1 - stepSize)*Q + stepSize*Qs;
+//                //write the obj function to file
+//		obj1 = getObj(Q1);
+//                stepFile << iter << " " << stepSize << " " << getObj(Q1) << std::endl;
+//        }
+//        stepFile.close();
+        //close file
+        
+	for(int binaryIter = 0; binaryIter <= 10; binaryIter++){	
 		candidateStep1 = (rangeStart + currentStep)/2;
 		candidateStep2 = (rangeEnd + currentStep)/2;
 
@@ -524,4 +555,11 @@ void expAndNormalizeSubmod ( MatrixXf & out, const MatrixXf & in ) {
         b = b.array().exp();
         out.col(i) = b / b.array().sum();
     }
+}
+
+void saveCurrentMarginals(MatrixXf &Q, int k){
+    std::ofstream QFile;
+    QFile.open(PATH_TO_RESULT + "/Q_" + std::to_string(k) + ".txt");
+    QFile << Q;
+    QFile.close();
 }

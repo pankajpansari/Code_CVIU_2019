@@ -37,7 +37,7 @@ using namespace Eigen;
 #include <iostream>
 
 // Data structure for the discretized splitted arrays
-#define RESOLUTION 100
+#define RESOLUTION 10
 typedef struct {
     float data[RESOLUTION];
 } split_array;
@@ -76,7 +76,7 @@ protected:
     void seqCompute_upper_minus_lower_ord ( float* out, const float* in, int value_size ) const;
     void seqCompute_upper_minus_lower_ord_cont ( float* out, const float* in, int value_size ) const;
 public:
-	Permutohedral();
+    Permutohedral();
     void init ( const MatrixXf & features );
 	MatrixXf compute ( const MatrixXf & v, bool reverse=false ) const;
     void compute ( MatrixXf & out, const MatrixXf & in, bool reverse=false ) const;
