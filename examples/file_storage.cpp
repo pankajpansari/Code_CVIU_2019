@@ -4,6 +4,7 @@
 #include <assert.h>
 #include <opencv2/opencv.hpp>
 #include <fstream>
+#include <Eigen/Eigenvalues>
 #include <sys/stat.h>
 
 // Directory and file stuff
@@ -224,7 +225,6 @@ unsigned char * load_image( const std::string & path_to_image, img_size & size){
         }
     }
 
-    std::cout << "height = " << size.height << " width = " << size.width << std::endl;
     unsigned char * char_img = new unsigned char[size.width*size.height*3];
     for (int j=0; j < size.height; j++) {
         for (int i=0; i < size.width; i++) {
@@ -536,3 +536,18 @@ void save_matrix(std::string path_to_output, MatrixXf matrix){
     file << matrix.format(CSVFormat);
     file.close();
 }
+
+namespace Eigen{
+void write_binary(std::string file_output, const MatrixXf& matrix){
+
+    const char* filename = file_output.c_str();
+    std::ofstream out(filename,std::ios::out | std::ios::binary | std::ios::trunc);
+    typename MatrixXf::Index rows=matrix.rows(), cols=matrix.cols();
+    out.write((char*) (&rows), sizeof(typename MatrixXf::Index));
+    out.write((char*) (&cols), sizeof(typename MatrixXf::Index));
+    out.write((char*) matrix.data(), rows*cols*sizeof(typename MatrixXf::Scalar) );
+    out.close();
+
+}
+}
+
