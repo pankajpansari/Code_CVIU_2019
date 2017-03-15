@@ -9,6 +9,16 @@
 using namespace std;
 using namespace Eigen; 
 
+void read_binary(const char* filename, MatrixXf& matrix){
+    std::ifstream in(filename,std::ios::in | std::ios::binary);
+    typename MatrixXf::Index rows=0, cols=0;
+    in.read((char*) (&rows),sizeof(typename MatrixXf::Index));
+    in.read((char*) (&cols),sizeof(typename MatrixXf::Index));
+    matrix.resize(rows, cols);
+    in.read( (char *) matrix.data() , rows*cols*sizeof(typename MatrixXf::Scalar) );
+    in.close();
+}
+
 void increment(int a, int *b){
     b[a] += 1; 
 }
@@ -16,13 +26,16 @@ void increment(int a, int *b){
 int main(int argc, char* argv[]) 
 {
 
+    MatrixXf a;
+    read_binary("Q_10.dat", a);
     //get the input arguments
     
-	MatrixXf a = MatrixXf::Constant(3, 2, 1);
+//	MatrixXf a = MatrixXf::Constant(3, 2, 1);
         
 //	a << 5, 2, 1, 6, 3, 8;
  //       a = a.array() - 1;
-        cout << a << endl;
+    cout << a.col(2) << endl;
+//    cout << a.cols() << endl;
 //
 //	cout << a << endl;	
 //        float* b = a.data();

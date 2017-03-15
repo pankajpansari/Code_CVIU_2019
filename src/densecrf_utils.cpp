@@ -4,7 +4,7 @@
 #include <Eigen/Eigenvalues>
 #include <sys/stat.h>
 
-extern std::string PATH_TO_RESULT;
+
 /////////////////////////////
 /////  eigen-utils      /////
 /////////////////////////////
@@ -473,24 +473,7 @@ float doLineSearch(const MatrixXf & Qs, const MatrixXf & Q, int iter){
         MatrixXf Q1 = MatrixXf::Zero(Q.rows(), Q.cols());
         MatrixXf Q2 = MatrixXf::Zero(Q.rows(), Q.cols());
 
-        //create file
-        std::ofstream stepFile;
-        if(fileExists(PATH_TO_RESULT + "/step.txt") == true)
-            stepFile.open(PATH_TO_RESULT + "/step.txt", std::ios_base::app);
-        else if(fileExists(PATH_TO_RESULT + "/step.txt") == false)
-            stepFile.open(PATH_TO_RESULT + "/step.txt");
-
-        //loop through step sizes
-//        for(float stepSize = 0; stepSize <= 0.001; stepSize = stepSize + 0.00001) {
-//        for(float stepSize = 0; stepSize <= 1; stepSize = stepSize + 0.01) {
-//                Q1 = (1 - stepSize)*Q + stepSize*Qs;
-//                //write the obj function to file
-//		obj1 = getObj(Q1);
-//                stepFile << iter << " " << stepSize << " " << getObj(Q1) << std::endl;
-//        }
-//        stepFile.close();
-        //close file
-        
+       
 	for(int binaryIter = 0; binaryIter <= 10; binaryIter++){	
 		candidateStep1 = (rangeStart + currentStep)/2;
 		candidateStep2 = (rangeEnd + currentStep)/2;
@@ -557,9 +540,3 @@ void expAndNormalizeSubmod ( MatrixXf & out, const MatrixXf & in ) {
     }
 }
 
-void saveCurrentMarginals(MatrixXf &Q, int k){
-    std::ofstream QFile;
-    QFile.open(PATH_TO_RESULT + "/Q_" + std::to_string(k) + ".txt");
-    QFile << Q;
-    QFile.close();
-}

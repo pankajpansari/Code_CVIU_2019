@@ -6,7 +6,6 @@
 #include "densecrf.h"
 #include "file_storage.hpp"
 
-std::string PATH_TO_RESULT;
 void image_inference(std::string image_file, std::string unary_file, std::string dataset_name, 
             std::string method, std::string results_path, float spc_std, float spc_potts, 
             float bil_spcstd, float bil_colstd, float bil_potts, LP_inf_params & lp_params, int imskip)
@@ -16,7 +15,7 @@ void image_inference(std::string image_file, std::string unary_file, std::string
         
 //    MatrixXf unaries = load_unary_rescaled(unary_file, size, imskip);
    MatrixXf unaries = load_unary(unary_file, size);
-//    unsigned char * img = load_rescaled_image(image_file, size, imskip);
+ //   unsigned char * img = load_rescaled_image(image_file, size, imskip);
    unsigned char * img = load_image(image_file, size);
     
     // create densecrf object
@@ -46,16 +45,15 @@ void image_inference(std::string image_file, std::string unary_file, std::string
 
     Q = unaries;
 
-    double initial_discretized_energy = crf.assignment_energy_true(crf.currentMap(Q));
-    std::cout << "Initial energy = " << initial_discretized_energy << std::endl;
+//    double initial_discretized_energy = crf.assignment_energy_true(crf.currentMap(Q));
+//   std::cout << "Initial energy = " << initial_discretized_energy << std::endl;
  
     if (method == "mf5") {
         Q = crf.mf_inference(Q, 5);
     } else if (method == "mf") {
         Q = crf.mf_inference(Q);
     } else if (method == "submod") {
-        Q = crf.submodular_inference(Q, size.width, size.height);
-	expAndNormalizeSubmod(Q, -Q);
+        Q = crf.submodular_inference(Q, size.width, size.height, output_path);
     } else if (method == "lrqp") {
         Q = crf.qp_inference(Q);
     } else if (method == "qpcccp") {
@@ -152,18 +150,18 @@ void image_inference(std::string image_file, std::string unary_file, std::string
         return;
     }
      
-    end = std::chrono::high_resolution_clock::now();
-    timing = std::chrono::duration_cast<std::chrono::duration<double>>(end-start).count();
-    double final_energy = crf.compute_energy_true(Q);
-    double discretized_energy = crf.assignment_energy_true(crf.currentMap(Q));
-    save_map(Q, size, output_path, dataset_name);
-    if (!pixel_ids.empty()) save_less_confident_pixels(Q, pixel_ids, size, output_path, dataset_name);
-    std::string txt_output = output_path;
-    txt_output.replace(txt_output.end()-3, txt_output.end(),"txt");
-    std::ofstream txt_file(txt_output);
-    txt_file << timing << '\t' << final_energy << '\t' << discretized_energy << std::endl;
-    std::cout << "#" << method << ": " << timing << '\t' << final_energy << '\t' << discretized_energy << std::endl;
-    txt_file.close();
+//    end = std::chrono::high_resolution_clock::now();
+//    timing = std::chrono::duration_cast<std::chrono::duration<double>>(end-start).count();
+//    double final_energy = crf.compute_energy_true(Q);
+//    double discretized_energy = crf.assignment_energy_true(crf.currentMap(Q));
+//    save_map(Q, size, output_path, dataset_name);
+//    if (!pixel_ids.empty()) save_less_confident_pixels(Q, pixel_ids, size, output_path, dataset_name);
+//    std::string txt_output = output_path;
+//    txt_output.replace(txt_output.end()-3, txt_output.end(),"txt");
+//    std::ofstream txt_file(txt_output);
+//    txt_file << timing << '\t' << final_energy << '\t' << discretized_energy << std::endl;
+//    std::cout << "#" << method << ": " << timing << '\t' << final_energy << '\t' << discretized_energy << std::endl;
+//    txt_file.close();
 }
 
 int main(int argc, char* argv[]) 
@@ -223,7 +221,22 @@ int main(int argc, char* argv[])
         << results_path << " " << dataset_name << " " << spc_std << " " << spc_potts << " " << bil_spcstd << " "
         << bil_colstd << " " << bil_potts << " " << imskip << " " << std::endl;
 
-    PATH_TO_RESULT = results_path + "/" + method + "/";
+    //write command to key file
+//    std::size_t found = image_file.find_last_of("/\\");
+//    std::string image_name = image_file.substr(found+1);
+//    std::string path_to_subexp_results = results_path + "/" + method + "/";
+//    std::string key_output = get_output_path(path_to_subexp_results, image_name);
+////    std::string key_output = get_output_path(results_path + "/" + method + "/", image_file);
+//    key_output.replace(key_output.end()-4, key_output.end(),"_key.txt");
+//    std::cout << key_output << std::endl;
+//    std::ofstream keyFile;
+//    keyFile.open(key_output);
+//
+//    keyFile << "#COMMAND: " << argv[0] << " " << image_file << " " << unary_file << " " << method << " " 
+//        << results_path << " " << dataset_name << " " << spc_std << " " << spc_potts << " " << bil_spcstd << " "
+//        << bil_colstd << " " << bil_potts << " " << imskip << " " << std::endl;
+//
+//    keyFile.close();
     
     // set prox-lp parameters: defaults to the settings given in the paper
     // defaults parameters are given in densecrf_utils.cpp

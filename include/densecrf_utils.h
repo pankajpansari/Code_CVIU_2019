@@ -84,4 +84,3 @@ float getObj(const MatrixXf & Q);
 float doLineSearch(const MatrixXf & Qs, const MatrixXf & Q, int iter);
 void getNegGradient(MatrixXf & negGrad, const MatrixXf & Q);
 void expAndNormalizeSubmod( MatrixXf & out, const MatrixXf & in);
-void saveCurrentMarginals(MatrixXf &Q, int k);
