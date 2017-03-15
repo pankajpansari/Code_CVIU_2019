@@ -115,7 +115,7 @@ public:
 float computeGaussianWeight(const VectorXf & feature_a, const VectorXf & feature_b);
 void getSubmodFnVal(int j, int i, MatrixXf &unary);
 void compareWithBf(MatrixXf &pairwise_filter, MatrixXf & grad);
-MatrixXf submodular_inference(MatrixXf & init, int width, int height);
+MatrixXf submodular_inference(MatrixXf & init, int width, int height, std::string output_path);
 void getConditionalGradient(MatrixXf & Qs, MatrixXf & Q);
 MatrixXf getFeatureMat(const unsigned char* im);
 //void greedyAlgorithmBruteForce(MatrixXf & Qs, MatrixXf &Q);

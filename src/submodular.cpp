@@ -13,8 +13,6 @@
 #include "pairwise.h"
 #include "file_storage.hpp"
 
-extern std::string PATH_TO_RESULT;
-
 void DenseCRF::getConditionalGradient(MatrixXf &Qs, MatrixXf & Q){
     //current solution is the input matrix (in)
     //conditional gradient is output
@@ -148,13 +146,13 @@ void DenseCRF::greedyAlgorithm_bf(MatrixXf &out, MatrixXf &grad){
     out = unary + pairwise;
 }
 
-MatrixXf DenseCRF::submodular_inference( MatrixXf & init, int width, int height) {
+MatrixXf DenseCRF::submodular_inference( MatrixXf & init, int width, int height, std::string output_path) {
 
     MatrixXf Q( M_, N_ ), Qs( M_, N_), temp(M_, N_); //Q is the current point, Qs is the conditional gradient
 
     MatrixP dot_tmp(M_, N_);
 
-    std::cout << "M_ = " << M_ << " N_ = " << N_ << std::endl;
+//    std::cout << "M_ = " << M_ << " N_ = " << N_ << std::endl;
     MatrixXf Qs_bf = MatrixXf::Zero(M_, N_);
     MatrixXf negGrad = MatrixXf::Zero( M_, N_ );
 
@@ -164,11 +162,16 @@ MatrixXf DenseCRF::submodular_inference( MatrixXf & init, int width, int height)
     img_size size;
     size.width = width;
     size.height = height;
-//   PATH_TO_RESULT.replace(PATH_TO_RESULT.end()-4, PATH_TO_RESULT.end(),"_obj.txt");
-//   PATH_TO_RESULT2.replace(PATH_TO_RESULT2.end()-4, PATH_TO_RESULT2.end(),"_time.txt");
 
+    //log file
+    std::string log_output = output_path;
+    log_output.replace(log_output.end()-4, log_output.end(),"_log.txt");
     std::ofstream logFile;
-    logFile.open(PATH_TO_RESULT + "/log.txt");
+    logFile.open(log_output);
+
+    //image file
+    std::string image_output = output_path;
+    std::string Q_output = output_path;
 
     clock_t start;
     float duration = 0;
@@ -178,14 +181,15 @@ MatrixXf DenseCRF::submodular_inference( MatrixXf & init, int width, int height)
     float objVal = 0;
     start = clock();
 
-    logFile << "0 " << getObj(Q) << " " <<  duration << " " << step << std::endl;
-    std::cout << "Iter: " << 0 << "  Obj value = " << getObj(Q) << std::endl;
+    objVal = getObj(Q);
+    logFile << "0 " << objVal << " " <<  duration << " " << step << std::endl;
+    std::cout << "Iter: 0   Obj value = " << objVal << "  Step size = 0    Time = 0s" << std::endl;
 
-    for(int k = 1; k <= 100; k++){
+    for(int k = 1; k <= 10; k++){
 
       //for debugging purposes - getting max-marginal solutions
 
-        std::cout << "Iter = " << k << std::endl;
+ //      std::cout << "Iter = " << k << std::endl;
       getNegGradient(negGrad, Q); //negative gradient
 
       greedyAlgorithm(Qs, negGrad);	
@@ -198,24 +202,41 @@ MatrixXf DenseCRF::submodular_inference( MatrixXf & init, int width, int height)
 
       Q = Q + step*(Qs - Q); 
 
+      duration = (clock() - start ) / (double) CLOCKS_PER_SEC;
+
+      objVal = getObj(Q);
+
+      //write to log file
+      logFile << k << " " << objVal << " " <<  duration << " " << step << std::endl;
+
+
       if(k == 10 || k == 100){
+            //name the segmented image and Q files
+            if(k == 10){
+                image_output = output_path;
+                Q_output = output_path;
+                image_output.replace(image_output.end()-4, image_output.end(),"_10.png");
+                Q_output.replace(Q_output.end()-4, Q_output.end(),"_Q_10.dat");
+            }
+            else{
+                image_output = output_path;
+                Q_output = output_path;
+                image_output.replace(image_output.end()-3, image_output.end(),"png");
+                Q_output.replace(Q_output.end()-4, Q_output.end(),"_Q.dat");
+            }
+ 
+          //save segmentation
+           expAndNormalizeSubmod(temp, -Q);
+           save_map(temp, size, image_output, "MSRC");
 
-            expAndNormalizeSubmod(temp, -Q);
-            save_map(temp, size, PATH_TO_RESULT + "/segment" + std::to_string(k) + ".png", "MSRC");
-
-            duration = (clock() - start ) / (double) CLOCKS_PER_SEC;
-
-            objVal = getObj(Q);
-
-            logFile << k << " " << objVal << " " <<  duration << " " << step << std::endl;
-
-            std::cout << "Iter: " << (k) << "  Obj value = " << objVal << "  Step size = " << step << " Time = " << duration << std::endl;
-
-            saveCurrentMarginals(Q, k);
-
+            //write to console
+            std::cout << "Iter: " << (k) << "  Obj value = " << objVal << "  Step size = " << step << " Time = " << duration << "s" << std::endl;
+            
+            //write the Q values
+            write_binary(Q_output, Q);
       }
+   }
 
-    }
    logFile.close();
    return Q;
 }
