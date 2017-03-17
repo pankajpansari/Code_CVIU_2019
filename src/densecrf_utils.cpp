@@ -461,24 +461,27 @@ bool fileExists(const std::string& filename)
     return false;
 }
 
-float doLineSearch(const MatrixXf & Qs, const MatrixXf & Q, int iter){
+float doLineSearch(const MatrixXf & Qs, const MatrixXf & Q, int iter, float prevStep){
 
 	//do binary search for line search
 	float rangeStart = 0;
-	float rangeEnd = 0.001;
+//	float rangeEnd = prevStep; 
+	float rangeEnd = 0.01; 
+
 	float currentStep = (rangeStart + rangeEnd)/2;
+//	float currentStep = prevStep;
         float candidateStep1 = 0, candidateStep2 = 0;
         float obj1 = 0, obj2 = 0;
+//        float epsilon = 1e-7;
 
         MatrixXf Q1 = MatrixXf::Zero(Q.rows(), Q.cols());
         MatrixXf Q2 = MatrixXf::Zero(Q.rows(), Q.cols());
 
-       
 	for(int binaryIter = 0; binaryIter <= 10; binaryIter++){	
 		candidateStep1 = (rangeStart + currentStep)/2;
 		candidateStep2 = (rangeEnd + currentStep)/2;
 
-		currentStep = (rangeStart + rangeEnd)/2;
+//		currentStep = (rangeStart + rangeEnd)/2;
 
                 Q1 = (1 - candidateStep1)*Q + candidateStep1*Qs;
                 Q2 = (1 - candidateStep2)*Q + candidateStep2*Qs;
@@ -486,16 +489,60 @@ float doLineSearch(const MatrixXf & Qs, const MatrixXf & Q, int iter){
 		obj1 = getObj(Q1);
 		obj2 = getObj(Q2);
 
+       //         if(fabs(candidateStep1 - candidateStep2) < epsilon){
+       //             if(fabs(obj1 - obj2) < epsilon){
+       //                return currentStep; 
+       //             }
+       //         }
+
 		if(obj1 < obj2)
 			rangeEnd = currentStep;
 		else
 			rangeStart = currentStep;
+		currentStep = (rangeStart + rangeEnd)/2;
 
 	}
-
         return currentStep;
 }
 
+float doLineSearch2(const MatrixXf & Qs, const MatrixXf & Q, int iter, float prevStep, std::string output_path){
+
+	//do binary search for line search
+	float rangeStart = 0;
+//	float rangeEnd = prevStep; 
+	float rangeEnd = 1; 
+        float middle = 0;
+        float deriv = 0;
+        float epsilon = 0.001;
+
+        std::string log_output = output_path;
+        log_output.replace(log_output.end()-4, log_output.end(),"_obj.txt");
+        std::ofstream logFile;
+        logFile.open(log_output);
+
+        for(float stepVal = 0; stepVal <= 1; stepVal = stepVal + 0.01){
+            MatrixXf temp = Q + stepVal*(Qs - Q);
+            logFile << stepVal << " " << getObj(temp) << " " << getDeriv(Qs, Q, stepVal) << std::endl;
+        }
+
+        logFile.close();
+
+	for(int binaryIter = 0; binaryIter <= 10; binaryIter++){	
+                middle = (rangeStart + rangeEnd)/2;
+                deriv = getDeriv(Qs, Q, middle); 
+
+               if(deriv > 0)
+                    rangeEnd = middle;
+                else if(deriv < 0)
+                    rangeStart = middle;
+                else{
+                    std::cout << "Deriv = " << deriv << std::endl;
+                    return middle;
+                }
+	}
+        std::cout << "Deriv = " << deriv << std::endl;
+        return middle;
+}
 float getObj(const MatrixXf & Q){
 
 	float logSum = 0, expSum = 0, minMarginal = 0;
@@ -512,6 +559,24 @@ float getObj(const MatrixXf & Q){
 
 	return logSum;
 }
+
+float getDeriv(const MatrixXf & Qs, const MatrixXf & Q, float step){
+
+        float deriv = 0; 
+	for(int i = 0; i < Q.cols(); i++){
+            VectorXf a = Q.col(i);
+            a = (-a.array()).exp();
+            VectorXf b = Qs.col(i) - Q.col(i);
+            VectorXf c = (-b.array()*step).exp();
+            VectorXf temp1 = -a.array()*b.array()*c.array();
+            VectorXf temp2 = a.array()*c.array();
+            if(fabs(temp2.sum()) < 0.5)
+                std::cout << "temp1.sum() = " << temp1.sum() << "  temp2.sum() = " << temp2.sum() << std::endl;
+//            std::cout << "temp1.sum() = " << temp1.sum() << "  temp2.sum() = " << temp2.sum() << std::endl;
+            deriv = deriv + temp1.sum()/temp2.sum();  
+        }
+       return deriv; 
+} 
 
 void getNegGradient(MatrixXf & negGrad, const MatrixXf & Q){
 
