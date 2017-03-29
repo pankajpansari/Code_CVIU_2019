@@ -146,7 +146,7 @@ void DenseCRF::greedyAlgorithm_bf(MatrixXf &out, MatrixXf &grad){
     out = unary + pairwise;
 }
 
-MatrixXf DenseCRF::submodular_inference( MatrixXf & init, int width, int height, std::string output_path) {
+MatrixXf DenseCRF::submodular_inference( MatrixXf & init, int width, int height, std::string output_path){
 
     MatrixXf Q( M_, N_ ), Qs( M_, N_), temp(M_, N_); //Q is the current point, Qs is the conditional gradient
 
@@ -158,7 +158,7 @@ MatrixXf DenseCRF::submodular_inference( MatrixXf & init, int width, int height,
 
    Q = init;	//initialize to unaries
 
-    float step = 0;
+    float step = 0.001;
     img_size size;
     size.width = width;
     size.height = height;
@@ -183,7 +183,7 @@ MatrixXf DenseCRF::submodular_inference( MatrixXf & init, int width, int height,
 
     objVal = getObj(Q);
     logFile << "0 " << objVal << " " <<  duration << " " << step << std::endl;
-    std::cout << "Iter: 0   Obj value = " << objVal << "  Step size = 0    Time = 0s" << std::endl;
+  //  std::cout << "Iter: 0   Obj value = " << objVal << "  Step size = 0    Time = 0s" << std::endl;
 
     for(int k = 1; k <= 10; k++){
 
@@ -198,7 +198,7 @@ MatrixXf DenseCRF::submodular_inference( MatrixXf & init, int width, int height,
 
 //      std::cout << "Dual gap = " << dualGap << std::endl;
 
-      step = doLineSearch(Qs, Q, k);
+      step = doLineSearch(Qs, Q, k, step);
 
       Q = Q + step*(Qs - Q); 
 
@@ -208,6 +208,7 @@ MatrixXf DenseCRF::submodular_inference( MatrixXf & init, int width, int height,
 
       //write to log file
       logFile << k << " " << objVal << " " <<  duration << " " << step << std::endl;
+//      std::cout << k << " " << objVal << " " <<  duration << " " << step << std::endl;
 
 
       if(k == 10 || k == 100){
@@ -230,7 +231,7 @@ MatrixXf DenseCRF::submodular_inference( MatrixXf & init, int width, int height,
            save_map(temp, size, image_output, "MSRC");
 
             //write to console
-            std::cout << "Iter: " << (k) << "  Obj value = " << objVal << "  Step size = " << step << " Time = " << duration << "s" << std::endl;
+ //           std::cout << "Iter: " << (k) << "  Obj value = " << objVal << "  Step size = " << step << " Time = " << duration << "s" << std::endl;
             
             //write the Q values
             write_binary(Q_output, Q);
@@ -238,5 +239,7 @@ MatrixXf DenseCRF::submodular_inference( MatrixXf & init, int width, int height,
    }
 
    logFile.close();
+   //convert Q to marginal probabilities
+   expAndNormalizeSubmod(Q, -Q); 
    return Q;
 }

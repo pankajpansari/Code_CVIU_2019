@@ -47,7 +47,7 @@ VectorXf LabelCompatibility::gradient( const MatrixXf & b, const MatrixXf & Q ) 
 PottsCompatibility::PottsCompatibility( float weight ): w_(weight) {
 }
 void PottsCompatibility::apply( MatrixXf & out, const MatrixXf & Q ) const {
-	out = w_*Q;
+	out =-w_*Q;
 	//out = matrixForm(Q.rows()) * Q;
 }
 //void PottsCompatibility::apply( MatrixXf & out, const MatrixXf & Q ) const {

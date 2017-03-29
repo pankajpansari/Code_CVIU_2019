@@ -9,32 +9,86 @@
 using namespace std;
 using namespace Eigen; 
 
-void read_binary(const char* filename, MatrixXf& matrix){
-    std::ifstream in(filename,std::ios::in | std::ios::binary);
-    typename MatrixXf::Index rows=0, cols=0;
-    in.read((char*) (&rows),sizeof(typename MatrixXf::Index));
-    in.read((char*) (&cols),sizeof(typename MatrixXf::Index));
-    matrix.resize(rows, cols);
-    in.read( (char *) matrix.data() , rows*cols*sizeof(typename MatrixXf::Scalar) );
-    in.close();
+float getObj(const MatrixXf & Q){
+
+	float logSum = 0, expSum = 0, minMarginal = 0;
+
+	for(int i = 0; i < Q.cols(); i++){
+            expSum = 0;
+            VectorXf b = Q.col(i);
+            minMarginal = b.minCoeff();
+            b.array() -= minMarginal; 
+            b = (-b.array()).exp(); 
+            expSum = b.sum();
+            logSum = logSum + log(expSum) - minMarginal;
+        }	
+
+	return logSum;
 }
 
-void increment(int a, int *b){
-    b[a] += 1; 
+float getDeriv(const MatrixXf & Q, const MatrixXf & Qs, float step){
+
+        float deriv = 0; 
+	for(int i = 0; i < Q.cols(); i++){
+            VectorXf a = Q.col(i);
+            a = (-a.array()).exp();
+            VectorXf b = Qs.col(i) - Q.col(i);
+            VectorXf c = (-b.array()*step).exp();
+            VectorXf temp1 = -a.array()*b.array()*c.array();
+            VectorXf temp2 = a.array()*c.array();
+            deriv = deriv + temp1.sum()/temp2.sum();  
+        }
+        return deriv;
+} 
+
+float doLineSearch2(const MatrixXf & Qs, const MatrixXf & Q){
+
+	//do binary search for line search
+	float rangeStart = 0;
+	float rangeEnd = 1; 
+        float middle = 0;
+        float deriv = 0;
+
+	for(int binaryIter = 0; binaryIter <= 20; binaryIter++){	
+                
+                middle = (rangeStart + rangeEnd)/2;
+                deriv = getDeriv(Q, Qs, middle); 
+
+                cout << middle << " " << deriv << endl;
+                if(deriv > 0)
+                    rangeEnd = middle;
+                else if(deriv < 0)
+                    rangeStart = middle;
+                else
+                    return middle;
+	}
+
+        return middle;
 }
 
 int main(int argc, char* argv[]) 
 {
 
-    MatrixXf a;
-    read_binary("Q_10.dat", a);
-    //get the input arguments
+    int N = 10000, M = 21;
+    MatrixXf Q = MatrixXf::Random(M, N);
+    MatrixXf Qs = MatrixXf::Random(M, N);
+    
+    ofstream logFile;
+    logFile.open("deriv.txt");
+    for(float step = 0; step <= 1; step = step + 0.01){
+        MatrixXf temp = Q + step*(Qs - Q);
+        float objVal = getObj(temp);
+        float deriv = getDeriv(Q, Qs, step);
+        logFile << step << " " << objVal << " " << deriv << endl;
+    }
+
+    cout << "step = " << doLineSearch2(Qs, Q) << endl;
+   //get the input arguments
     
 //	MatrixXf a = MatrixXf::Constant(3, 2, 1);
         
 //	a << 5, 2, 1, 6, 3, 8;
  //       a = a.array() - 1;
-    cout << a.col(2) << endl;
 //    cout << a.cols() << endl;
 //
 //	cout << a << endl;	

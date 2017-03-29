@@ -1,22 +1,28 @@
+#include <chrono>
 #include <fstream>
-#include <vector>
 #include <string>
-#include "file_storage.hpp"
+#include <cstddef>
+#include <vector>
 #include "densecrf.h"
+#include "file_storage.hpp"
 
 void image_inference(Dataset dataset, std::string method, std::string path_to_results,
                      std::string image_name, float spc_std, float spc_potts, float bil_spcstd, float bil_colstd, float bil_potts, LP_inf_params & lp_params)
 {
 
-    std::string image_path = dataset.get_image_path(image_name);
-    std::string unaries_path = dataset.get_unaries_path(image_name);
+    std::string image_file = dataset.get_image_path(image_name);
+    std::string unary_file = dataset.get_unaries_path(image_name);
     std::string dataset_name = dataset.name;
 
-    img_size size = {-1, -1};
-    // Load the unaries potentials for our image.
-    MatrixXf unaries = load_unary(unaries_path, size);
-    unsigned char * img = load_image(image_path, size);
 
+    img_size size = {-1, -1};
+        
+//    MatrixXf unaries = load_unary_rescaled(unary_file, size, imskip);
+   MatrixXf unaries = load_unary(unary_file, size);
+ //   unsigned char * img = load_rescaled_image(image_file, size, imskip);
+   unsigned char * img = load_image(image_file, size);
+    
+    // create densecrf object
     DenseCRF2D crf(size.width, size.height, unaries.rows());
     crf.setUnaryEnergy(unaries);
     crf.addPairwiseGaussian(spc_std, spc_std, new PottsCompatibility(spc_potts));
@@ -24,62 +30,144 @@ void image_inference(Dataset dataset, std::string method, std::string path_to_re
                              bil_colstd, bil_colstd, bil_colstd,
                              img, new PottsCompatibility(bil_potts));
 
+    crf.getFeatureMat(img);
 
-    std::cout << "Method = " << method << std::endl;
     MatrixXf Q;
-    {
-        std::string path_to_subexp_results = path_to_results + "/" + method + "/";
-        std::string output_path = get_output_path(path_to_subexp_results, image_name);
-        if (not file_exist(output_path)) {
-            clock_t start, end;
-            double timing;
-            std::cout << image_path << std::endl;
-            start = clock();
-            Q = crf.unary_init();
-            if (method == "mf5") {
-                Q = crf.mf_inference(Q, 5);
-            } else if (method == "mf") {
-                Q = crf.mf_inference(Q);
-            } else if (method == "lrqp") {
-                Q = crf.qp_inference(Q);
-            } else if (method == "qpcccp") {
-                Q = crf.qp_inference(Q);
-                Q = crf.qp_cccp_inference(Q);
-            } else if (method == "fixedDC-CCV"){
-                Q = crf.qp_inference(Q);
-                Q = crf.concave_qp_cccp_inference(Q);
-            } else if (method == "sg_lp"){
-                Q = crf.qp_inference(Q);
-                Q = crf.concave_qp_cccp_inference(Q);
-                Q = crf.lp_inference(Q, false);
-            } else if (method == "cg_lp"){
-                Q = crf.qp_inference(Q);
-                Q = crf.concave_qp_cccp_inference(Q);
-                Q = crf.lp_inference(Q, true);
-            } else if (method == "prox-lp") {    // standard prox_lp
-		Q = crf.qp_inference(Q);
-		Q = crf.concave_qp_cccp_inference(Q);
-		Q = crf.lp_inference_prox(Q, lp_params);    
-	    } else if (method == "unary"){
-                (void)0;
-            } else{
-                std::cout << "Unrecognised method.\n Proper error handling would do something but I won't." << '\n';
-            }
+    std::cout << image_file << std::endl;
+//    std::size_t found = image_file.find_last_of("/\\");
+//    std::string image_name = image_file.substr(found+1);
+//    found = image_name.find_last_of(".");
+//    image_name = image_name.substr(0, found);
+    std::string path_to_subexp_results = path_to_results + "/" + method + "/";
+    std::string output_path = get_output_path(path_to_subexp_results, image_name);
+    make_dir(path_to_subexp_results);
 
+    typedef std::chrono::high_resolution_clock::time_point htime;
+    htime start, end;
+    double timing;
+    std::vector<int> pixel_ids;
+    start = std::chrono::high_resolution_clock::now();
 
-            make_dir(path_to_subexp_results);
-            end = clock();
-            timing = (double(end-start)/CLOCKS_PER_SEC);
-            double final_energy = crf.compute_energy(Q);
-            double discretized_energy = crf.assignment_energy(crf.currentMap(Q));
-            save_map(Q, size, output_path, dataset_name);
-            std::string txt_output = output_path;
-            txt_output.replace(txt_output.end()-3, txt_output.end(),"txt");
-            std::ofstream txt_file(txt_output.c_str());
-            txt_file << timing << '\t' << final_energy << '\t' << discretized_energy << std::endl;
-            txt_file.close();
+    Q = unaries;
+
+//    double initial_discretized_energy = crf.assignment_energy_true(crf.currentMap(Q));
+//   std::cout << "Initial energy = " << initial_discretized_energy << std::endl;
+ 
+
+    if (method == "mf5") {
+        Q = crf.mf_inference(Q, 5);
+    } else if (method == "mf") {
+        Q = crf.mf_inference(Q);
+    } else if (method == "submod") {
+        Q = crf.submodular_inference(Q, size.width, size.height, output_path);
+    } else if (method == "lrqp") {
+        Q = crf.qp_inference(Q);
+    } else if (method == "qpcccp") {
+        Q = crf.qp_inference(Q);
+        Q = crf.qp_cccp_inference(Q);
+    } else if (method == "dc-neg") {
+        Q = crf.qp_inference(Q);
+        Q = crf.concave_qp_cccp_inference(Q);
+    } else if (method == "sg-lp") {
+        Q = crf.qp_inference(Q);
+        Q = crf.concave_qp_cccp_inference(Q);
+        Q = crf.lp_inference(Q, false);
+    } else if (method == "cg-lp") {
+        Q = crf.qp_inference(Q);
+        Q = crf.concave_qp_cccp_inference(Q);
+        Q = crf.lp_inference(Q, true);
+    } else if (method == "prox-lp") {    // standard prox_lp
+        Q = crf.qp_inference(Q);
+        Q = crf.concave_qp_cccp_inference(Q);
+        Q = crf.lp_inference_prox(Q, lp_params);    
+    } else if (method == "prox-lp-l") {  // standard prox_lp with limited labels
+        Q = crf.qp_inference(Q);
+        Q = crf.concave_qp_cccp_inference(Q);
+
+        htime st = std::chrono::high_resolution_clock::now();
+        std::vector<int> indices;
+        get_limited_indices(Q, indices);
+        if (indices.size() > 1) {
+            MatrixXf runaries = get_restricted_matrix(unaries, indices);
+            MatrixXf rQ = get_restricted_matrix(Q, indices);
+            DenseCRF2D rcrf(size.width, size.height, runaries.rows());
+            rcrf.setUnaryEnergy(runaries);
+            rcrf.addPairwiseGaussian(spc_std, spc_std, new PottsCompatibility(spc_potts));
+            rcrf.addPairwiseBilateral(bil_spcstd, bil_spcstd,
+                         bil_colstd, bil_colstd, bil_colstd,
+                         img, new PottsCompatibility(bil_potts));
+            htime et = std::chrono::high_resolution_clock::now();
+            double dt = std::chrono::duration_cast<std::chrono::duration<double>>(et-st).count();
+    
+            rQ = rcrf.lp_inference_prox(rQ, lp_params);
+            
+            Q = get_extended_matrix(rQ, indices, unaries.rows());
         }
+    } else if (method == "prox-lp-p") {    // standard prox_lp with limited pixels
+        Q = crf.qp_inference(Q);
+        Q = crf.concave_qp_cccp_inference(Q);
+
+        lp_params.less_confident_percent = 10;
+        lp_params.confidence_tol = 0.95;
+        Q = crf.lp_inference_prox(Q, lp_params);
+    
+        // lp inference params
+        LP_inf_params lp_params_rest = lp_params;
+        lp_params_rest.prox_reg_const = 0.001;
+        Q = crf.lp_inference_prox_restricted(Q, lp_params_rest);
+        less_confident_pixels(pixel_ids, Q, lp_params.confidence_tol);                    
+        
+    } else if (method == "prox-lp-acc") {    // fully accelerated prox_lp
+        Q = crf.qp_inference(Q);
+        Q = crf.concave_qp_cccp_inference(Q);
+
+        htime st = std::chrono::high_resolution_clock::now();
+        std::vector<int> indices;
+        get_limited_indices(Q, indices);
+        if (indices.size() > 1) {
+            MatrixXf runaries = get_restricted_matrix(unaries, indices);
+            MatrixXf rQ = get_restricted_matrix(Q, indices);
+            DenseCRF2D rcrf(size.width, size.height, runaries.rows());
+            rcrf.setUnaryEnergy(runaries);
+            rcrf.addPairwiseGaussian(spc_std, spc_std, new PottsCompatibility(spc_potts));
+            rcrf.addPairwiseBilateral(bil_spcstd, bil_spcstd,
+                         bil_colstd, bil_colstd, bil_colstd,
+                         img, new PottsCompatibility(bil_potts));
+            htime et = std::chrono::high_resolution_clock::now();
+            double dt = std::chrono::duration_cast<std::chrono::duration<double>>(et-st).count();
+            //std::cout << "#rcrf construction: " << dt << " seconds" << std::endl;
+    
+            lp_params.less_confident_percent = 10;
+            lp_params.confidence_tol = 0.95;
+            rQ = rcrf.lp_inference_prox(rQ, lp_params);
+    
+            // lp inference params
+            LP_inf_params lp_params_rest = lp_params;
+            lp_params_rest.prox_reg_const = 0.001;
+            rQ = rcrf.lp_inference_prox_restricted(rQ, lp_params_rest);
+            less_confident_pixels(pixel_ids, rQ, lp_params.confidence_tol);                    
+            
+            Q = get_extended_matrix(rQ, indices, unaries.rows());
+        }
+    } else if (method == "unary") {
+        (void)0;
+    } else {
+        std::cout << "Unrecognised method: " << method << ", exiting..." << std::endl;
+        return;
     }
+     
+    end = std::chrono::high_resolution_clock::now();
+    timing = std::chrono::duration_cast<std::chrono::duration<double>>(end-start).count();
+    double final_energy = crf.compute_energy_true(Q);
+    double discretized_energy = crf.assignment_energy_true(crf.currentMap(Q));
+    save_map(Q, size, output_path, dataset_name);
+    if (!pixel_ids.empty()) save_less_confident_pixels(Q, pixel_ids, size, output_path, dataset_name);
+    std::string txt_output = output_path;
+    txt_output.replace(txt_output.end()-3, txt_output.end(),"txt");
+    std::ofstream txt_file(txt_output);
+    txt_file << timing << '\t' << final_energy << '\t' << discretized_energy << std::endl;
+    std::cout << "#" << method << ": " << timing << '\t' << final_energy << '\t' << discretized_energy << std::endl;
+    txt_file.close();
 }
 
 int main(int argc, char *argv[])
@@ -95,42 +183,38 @@ int main(int argc, char *argv[])
     std::string method = argv[3];
     std::string path_to_results = argv[4];
 
-    float spc_std = 3.535267;
-    float spc_potts = 2.247081;
-    float bil_spcstd = 31.232626;
-    float bil_colstd = 7.949970;
-    float bil_potts = 1.699011;
+    std::cout << "Results path = " << path_to_results << std::endl;
+//    float spc_std = 3.535267;
+//    float spc_potts = 2.247081;
+//    float bil_spcstd = 31.232626;
+//    float bil_colstd = 7.949970;
+//    float bil_potts = 1.699011;
 
-     if (argc < 10) { 
-        if (dataset_name == "Pascal2010") {
-            spc_std = 3.071772;
-            spc_potts = 0.5;
-            bil_spcstd = 49.78567;
-            bil_colstd = 1;
-            bil_potts = 0.960811;
-        } else if (dataset_name != "MSRC") {
-            dataset_name = "MSRC";
-            std::cout << "Unrecognized dataset name, defaults to MSRC..." << std::endl;
-        }         
-    } else {
-        spc_std = std::stof(argv[5]);
-        spc_potts = std::stof(argv[6]);
-        bil_spcstd = std::stof(argv[7]);
-        bil_colstd = std::stof(argv[8]);
-        bil_potts = std::stof(argv[9]);
-    }
+    float spc_std = 0;
+    float spc_potts = 0;
+    float bil_spcstd = 0;
+    float bil_colstd = 0;
+    float bil_potts = 0;
+
+ 
+   spc_std = std::stof(argv[5]);
+   spc_potts = std::stof(argv[6]);
+   bil_spcstd = std::stof(argv[7]);
+   bil_colstd = std::stof(argv[8]);
+   bil_potts = std::stof(argv[9]);
+
+   std::cout << "#COMMAND: " << argv[0] << " " << dataset_split << " " << dataset_name << " " << method << " " << path_to_results << " " << spc_std << " " << spc_potts << " " << bil_spcstd << " " << bil_colstd << " " << bil_potts << std::endl;
+
 
     make_dir(path_to_results);
 
-    std::cout << "Hello, world!" << std::endl;
     Dataset ds = get_dataset_by_name(dataset_name);
     std::vector<std::string> test_images = ds.get_all_split_files(dataset_split);
     omp_set_num_threads(8);
-    std::cout << "Dataset size = " << test_images.size() << std::endl;
 	
     LP_inf_params lp_params;
 
-#pragma omp parallel for
+//    #pragma omp parallel for
     for(int i=0; i< test_images.size(); ++i){
         image_inference(ds, method, path_to_results, test_images[i], spc_std, spc_potts,
                         bil_spcstd, bil_colstd, bil_potts, lp_params);

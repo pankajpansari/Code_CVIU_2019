@@ -93,6 +93,7 @@ std::vector<std::string> Dataset::get_all_split_files(const std::string & split)
     while(getline(file, next_img_name)){
         next_img_name = rtrim(next_img_name);
         next_img_name = stringreplace(next_img_name, ".bmp", ""); // Cleanup the name in MSRC
+//        std::cout << "next_img_name = " << next_img_name << std::endl;
         split_images.push_back(next_img_name);
     }
     return split_images;

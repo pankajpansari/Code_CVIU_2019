@@ -10,12 +10,11 @@ void image_inference(std::string image_file, std::string unary_file, std::string
             std::string method, std::string results_path, float spc_std, float spc_potts, 
             float bil_spcstd, float bil_colstd, float bil_potts, LP_inf_params & lp_params, int imskip)
 {
-
     img_size size = {-1, -1};
         
-//    MatrixXf unaries = load_unary_rescaled(unary_file, size, imskip);
+ //   MatrixXf unaries = load_unary_rescaled(unary_file, size, imskip);
    MatrixXf unaries = load_unary(unary_file, size);
- //   unsigned char * img = load_rescaled_image(image_file, size, imskip);
+//    unsigned char * img = load_rescaled_image(image_file, size, imskip);
    unsigned char * img = load_image(image_file, size);
     
     // create densecrf object
@@ -150,18 +149,18 @@ void image_inference(std::string image_file, std::string unary_file, std::string
         return;
     }
      
-//    end = std::chrono::high_resolution_clock::now();
-//    timing = std::chrono::duration_cast<std::chrono::duration<double>>(end-start).count();
-//    double final_energy = crf.compute_energy_true(Q);
-//    double discretized_energy = crf.assignment_energy_true(crf.currentMap(Q));
-//    save_map(Q, size, output_path, dataset_name);
-//    if (!pixel_ids.empty()) save_less_confident_pixels(Q, pixel_ids, size, output_path, dataset_name);
-//    std::string txt_output = output_path;
-//    txt_output.replace(txt_output.end()-3, txt_output.end(),"txt");
-//    std::ofstream txt_file(txt_output);
-//    txt_file << timing << '\t' << final_energy << '\t' << discretized_energy << std::endl;
-//    std::cout << "#" << method << ": " << timing << '\t' << final_energy << '\t' << discretized_energy << std::endl;
-//    txt_file.close();
+    end = std::chrono::high_resolution_clock::now();
+    timing = std::chrono::duration_cast<std::chrono::duration<double>>(end-start).count();
+    double final_energy = crf.compute_energy_true(Q);
+    double discretized_energy = crf.assignment_energy_true(crf.currentMap(Q));
+    save_map(Q, size, output_path, dataset_name);
+    if (!pixel_ids.empty()) save_less_confident_pixels(Q, pixel_ids, size, output_path, dataset_name);
+    std::string txt_output = output_path;
+    txt_output.replace(txt_output.end()-3, txt_output.end(),"txt");
+    std::ofstream txt_file(txt_output);
+    txt_file << timing << '\t' << final_energy << '\t' << discretized_energy << std::endl;
+    std::cout << "#" << method << ": " << timing << '\t' << final_energy << '\t' << discretized_energy << std::endl;
+    txt_file.close();
 }
 
 int main(int argc, char* argv[]) 
@@ -174,6 +173,8 @@ int main(int argc, char* argv[])
             "/path/to/results [MSRC, Pascal2010] [int] [float] [float] [float] [float] [float] " << std::endl;
         return 1;
     }
+
+//./inference ../../data/2_14_s.bmp ../../data/2_14_s.c_unary submod . MSRC 1
 
     // set input, output paths and method
     std::string image_file = argv[1];
@@ -198,24 +199,24 @@ int main(int argc, char* argv[])
 
     int imskip = std::stoi(argv[6]);
 
-//    if (argc < 11) { 
-//        if (dataset_name == "Pascal2010") {
-//            spc_std = 3.071772;
-//            spc_potts = 0.5;
-//            bil_spcstd = 49.78567;
-//            bil_colstd = 1;
-//            bil_potts = 0.960811;
-//        } else if (dataset_name != "MSRC") {
-//            dataset_name = "MSRC";
-//            std::cout << "Unrecognized dataset name, defaults to MSRC..." << std::endl;
-//        }         
-//    } else {
-//        spc_std = std::stof(argv[7]);
-//        spc_potts = std::stof(argv[8]);
-//        bil_spcstd = std::stof(argv[9]);
-//        bil_colstd = std::stof(argv[10]);
-//        bil_potts = std::stof(argv[11]);
-//    }
+    if (argc < 11) { 
+        if (dataset_name == "Pascal2010") {
+            spc_std = 3.071772;
+            spc_potts = 0.5;
+            bil_spcstd = 49.78567;
+            bil_colstd = 1;
+            bil_potts = 0.960811;
+        } else if (dataset_name != "MSRC") {
+            dataset_name = "MSRC";
+            std::cout << "Unrecognized dataset name, defaults to MSRC..." << std::endl;
+        }         
+    } else {
+        spc_std = std::stof(argv[7]);
+        spc_potts = std::stof(argv[8]);
+        bil_spcstd = std::stof(argv[9]);
+        bil_colstd = std::stof(argv[10]);
+        bil_potts = std::stof(argv[11]);
+    }
 
     std::cout << "#COMMAND: " << argv[0] << " " << image_file << " " << unary_file << " " << method << " " 
         << results_path << " " << dataset_name << " " << spc_std << " " << spc_potts << " " << bil_spcstd << " "
@@ -247,3 +248,4 @@ int main(int argc, char* argv[])
 
     return 0;
 }
+
