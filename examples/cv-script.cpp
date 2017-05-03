@@ -48,17 +48,17 @@ void image_inference(Dataset dataset, std::string method, std::string path_to_re
     std::vector<int> pixel_ids;
     start = std::chrono::high_resolution_clock::now();
 
-    Q = unaries;
 
 //    double initial_discretized_energy = crf.assignment_energy_true(crf.currentMap(Q));
 //   std::cout << "Initial energy = " << initial_discretized_energy << std::endl;
  
-
+    Q = crf.unary_init();
     if (method == "mf5") {
         Q = crf.mf_inference(Q, 5);
     } else if (method == "mf") {
         Q = crf.mf_inference(Q);
     } else if (method == "submod") {
+        Q = unaries;
         Q = crf.submodular_inference(Q, size.width, size.height, output_path);
     } else if (method == "lrqp") {
         Q = crf.qp_inference(Q);

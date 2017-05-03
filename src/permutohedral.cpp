@@ -534,13 +534,13 @@ void printSplitArray(split_array *in) {
 		printf("%3d: %f\n", i*RESOLUTION/precision, in_f[int(i*RESOLUTION/precision)]);
 	}
 }
-void addSplitArray(split_array *out, float alpha, float up_to, bool from_top, int *k_bin_count) {
+void addSplitArray(split_array *out, float alpha, float up_to, bool from_top) {
 	float *out_f = (float *)out;
     if (from_top) {	// the pixels that have lesser Q value than the current one influence the current pixel
-        int coeff = std::max(int(floor((up_to-1e-9)*RESOLUTION)), 0);
+		int coeff = std::max(int(floor((up_to-1e-9)*RESOLUTION)), 0);
         assert(coeff >= 0 && coeff < RESOLUTION);
-        k_bin_count[coeff] += 1;
-#if STRICT_INEQUALITY   // don't influence pixels that belongs to the same bin ++coeff;
+#if STRICT_INEQUALITY   // don't influence pixels that belongs to the same bin
+        ++coeff;
 #endif
 		for(int i=coeff; i<RESOLUTION; ++i) {
 			out_f[i] += alpha;
@@ -548,7 +548,6 @@ void addSplitArray(split_array *out, float alpha, float up_to, bool from_top, in
 	} else {	// the pixels that have greater Q value than the current one influence the current pixel
 		int coeff = std::min(int(floor((up_to)*RESOLUTION)), RESOLUTION-1);
 		assert(coeff >= 0 && coeff < RESOLUTION);
-                k_bin_count[coeff] += 1;
 #if STRICT_INEQUALITY   // don't influence pixels that belongs to the same bin
         --coeff;
 #endif
@@ -566,7 +565,7 @@ void weightedAddSplitArray(split_array *out, split_array *in1, float alpha, spli
 		out_f[i] = in1_f[i] + alpha * (in2_f[i] + in3_f[i]);
 	}
 }
-void sliceSplitArray(float *out, float alpha, float up_to, split_array *in, bool from_top, int *k_bin_count) {
+void sliceSplitArray(float *out, float alpha, float up_to, split_array *in, bool from_top) {
 	float *in_f = (float *)in;
 	int coeff;
 	if (from_top) {	
@@ -575,15 +574,9 @@ void sliceSplitArray(float *out, float alpha, float up_to, split_array *in, bool
 		coeff = std::min(int(floor((up_to)*RESOLUTION)), RESOLUTION-1);
 	}
 	assert(coeff >= 0 && coeff < RESOLUTION);
-//	*out += in_f[coeff] * alpha/k_bin_count[coeff];
-       *out += in_f[coeff] * alpha;
+	*out += in_f[coeff] * alpha;
 }
-
-void Permutohedral::seqCompute_upper_minus_lower_ord (float* out, const float* in, int value_size) const { 
-        const int bins = RESOLUTION;
-        int binCount[value_size][bins];
-        memset(binCount, 0, value_size*sizeof(split_array));
-   
+void Permutohedral::seqCompute_upper_minus_lower_ord (float* out, const float* in, int value_size) const {
 	// Shift all values by 1 such that -1 -> 0 (used for blurring)
 	split_array * values = new split_array[ (M_+2)*value_size ];
 	split_array * new_values = new split_array[ (M_+2)*value_size ];
@@ -601,27 +594,13 @@ void Permutohedral::seqCompute_upper_minus_lower_ord (float* out, const float* i
 			int o = offset_[i*(d_+1)+j]+1;
 			float w = barycentric_[i*(d_+1)+j];
 			for( int k=0; k<value_size; k++ ) {
-				addSplitArray(&values[ o*value_size+k ], w, in[ i*value_size+k ], false, binCount[k]);
-                // values[ o*value_size+k ] += w * in[ i*value_size+k ];
+				addSplitArray(&values[ o*value_size+k ], w, in[ i*value_size+k ], false);
+				// values[ o*value_size+k ] += w * in[ i*value_size+k ];
                 //printf("#%d\n", o*value_size+k);
                 //printSplitArray(&values[ o*value_size+k ]);
 			}
 		}
 	}
-
-        for( int k=0; k<value_size; k++ ) {
-            for( int i=0;  i<RESOLUTION; i++ ){
-                binCount[k][i] = binCount[k][i]/(d_+1);
-               binCount[k][i] = 1;
-            }
-        }
-
-       // std::cout << "Printing bin counts" << std::endl;
-       // for(int i = 0; i < value_size; i ++){
-       //     for(int j = 0; j < bins; j ++)
-       //         std::cout << binCount[i][j] << " ";
-       //     std::cout << std::endl;
-       // }
 
 	// Blurring
 	for( int j=0; j<=d_; ++j ){
@@ -635,10 +614,9 @@ void Permutohedral::seqCompute_upper_minus_lower_ord (float* out, const float* i
 			split_array * n2_val = values + n2*value_size;
 			for( int k=0; k<value_size; k++ ) {
 				weightedAddSplitArray(&new_val[k], &old_val[k], 0.5, &n1_val[k], &n2_val[k]);
-                        // new_val[k] = old_val[k]+0.5*(n1_val[k] + n2_val[k]);
+				// new_val[k] = old_val[k]+0.5*(n1_val[k] + n2_val[k]);
                 //printf("#%d\n", (i+1)*value_size+k);
                 //printSplitArray(&new_val[ k ]);
-
 //                if (i == 0 && k == 0) {
 //                printf("#%d\n", (i+1)*value_size+k);
 //                printf("new_val\n"); printSplitArray(&new_val[ k ]);
@@ -659,7 +637,7 @@ void Permutohedral::seqCompute_upper_minus_lower_ord (float* out, const float* i
 			int o = offset_[i*(d_+1)+j]+1;
 			float w = barycentric_[i*(d_+1)+j];
 			for( int k=0; k<value_size; k++ ) {
-				sliceSplitArray(&out[ i*value_size+k ], -w*alpha, in[ i*value_size+k ], &values[ o*value_size+k ], false, binCount[k]);
+				sliceSplitArray(&out[ i*value_size+k ], -w*alpha, in[ i*value_size+k ], &values[ o*value_size+k ], false);
 				//out[ i*value_size+k ] += w * values[ o*value_size+k ] * alpha;
 			}
 		}
@@ -667,7 +645,6 @@ void Permutohedral::seqCompute_upper_minus_lower_ord (float* out, const float* i
 	
 	memset(values, 0, (M_+2)*value_size*sizeof(split_array));
 	memset(new_values, 0, (M_+2)*value_size*sizeof(split_array));
-        memset(binCount, 0, value_size*sizeof(split_array));
 	
 	// Upper
 	// Splatting
@@ -676,7 +653,7 @@ void Permutohedral::seqCompute_upper_minus_lower_ord (float* out, const float* i
 			int o = offset_[i*(d_+1)+j]+1;
 			float w = barycentric_[i*(d_+1)+j];
 			for( int k=0; k<value_size; k++ ) {
-				addSplitArray(&values[ o*value_size+k ], w, in[ i*value_size+k ], true,binCount[k]);
+				addSplitArray(&values[ o*value_size+k ], w, in[ i*value_size+k ], true);
 				// values[ o*value_size+k ] += w * in[ i*value_size+k ];
                 //printf("#%d\n", o*value_size+k);
                 //printSplitArray(&values[ o*value_size+k ]);
@@ -684,14 +661,7 @@ void Permutohedral::seqCompute_upper_minus_lower_ord (float* out, const float* i
 		}
 	}
 
-        for( int k=0; k<value_size; k++ ) {
-            for( int i=0;  i<RESOLUTION; i++ ){
-                binCount[k][i] = binCount[k][i]/(d_+1);
-                binCount[k][i] = 1;
-            }
-        }
-
-        // Blurring
+	// Blurring
 	for( int j=0; j<=d_; ++j ){
 		for( int i=0; i<M_; i++ ){
 			split_array * old_val = values + (i+1)*value_size;
@@ -717,7 +687,7 @@ void Permutohedral::seqCompute_upper_minus_lower_ord (float* out, const float* i
 			int o = offset_[i*(d_+1)+j]+1;
 			float w = barycentric_[i*(d_+1)+j];
 			for( int k=0; k<value_size; k++ ) {
-				sliceSplitArray(&out[ i*value_size+k ], w*alpha, in[ i*value_size+k ], &values[ o*value_size+k ], true, binCount[k]);
+				sliceSplitArray(&out[ i*value_size+k ], w*alpha, in[ i*value_size+k ], &values[ o*value_size+k ], true);
 				// out[ i*value_size+k ] += w * values[ o*value_size+k ] * alpha;
 			}
 		}
@@ -968,7 +938,7 @@ void weightedAddContSplitArray(cont_split_array *out, cont_split_array *in1, flo
 	//addContSplitArray(tmp2, in1, tmp); // tmp2 = in1 + alpha*(in2+in3)
 	//cont_split_array * out_clone = cloneContSplitArray(out);
 	//addContSplitArray(out, out_clone, tmp2); // out = out + in1+alpha*(in2+in3)
-        freeContSplitArray(out, false);
+    freeContSplitArray(out, false);
 	addContSplitArray(out, in1, tmp); // out = in1 + alpha*(in2+in3) // this is what we want!
 	freeContSplitArray(tmp, true);
 	//freeContSplitArray(tmp2, true);
@@ -1008,108 +978,108 @@ void printContSplitArray(cont_split_array *array, bool from_top) {
 		printf("%3d: %f\n", i*RESOLUTION/precision, out);
 	}
 }
-//void testSplitArrays() {
-//	// To compare the discrete and continuous implementations
-//	split_array disc = {0};
-//	split_array disc1 = {0};
-//	split_array disc2 = {0};
-//	split_array disc3 = {0};
-//	cont_split_array * cont = newContSplitArray();
-//	cont_split_array * cont1 = newContSplitArray();
-//	cont_split_array * cont2 = newContSplitArray();
-//	cont_split_array * cont3 = newContSplitArray();
-//	float out_disc, out_cont;
-//
-//    bool upper = false;
-//
+void testSplitArrays() {
+	// To compare the discrete and continuous implementations
+	split_array disc = {0};
+	split_array disc1 = {0};
+	split_array disc2 = {0};
+	split_array disc3 = {0};
+	cont_split_array * cont = newContSplitArray();
+	cont_split_array * cont1 = newContSplitArray();
+	cont_split_array * cont2 = newContSplitArray();
+	cont_split_array * cont3 = newContSplitArray();
+	float out_disc, out_cont;
+
+    bool upper = false;
+
+	addSplitArray(&disc1, 1, 0., upper);
+	addContSplitArrayCst(cont1, 1, 0., upper);
+	printSplitArray(&disc1);
+	printContSplitArray(cont1);
+	printContSplitArray(cont1, upper);
+
+    out_disc = 0; out_cont = 0;
+	sliceSplitArray(&out_disc, 1, 1, &disc1, upper);
+	sliceContSplitArray(&out_cont, 1, 1, cont1, upper);
+	printf("%f vs %f\n", out_disc, out_cont);
+
+    out_disc = 0; out_cont = 0;
+	sliceSplitArray(&out_disc, 1, 0, &disc1, upper);
+	sliceContSplitArray(&out_cont, 1, 0, cont1, upper);
+	printf("%f vs %f\n", out_disc, out_cont);
+
+    out_disc = 0; out_cont = 0;
+	sliceSplitArray(&out_disc, 1, 0.1, &disc1, upper);
+	sliceContSplitArray(&out_cont, 1, 0.1, cont1, upper);
+	printf("%f vs %f\n", out_disc, out_cont);
+
 //	addSplitArray(&disc1, 1, 0., upper);
 //	addContSplitArrayCst(cont1, 1, 0., upper);
 //	printSplitArray(&disc1);
 //	printContSplitArray(cont1);
-//	printContSplitArray(cont1, upper);
 //
+//	addSplitArray(&disc1, 1, 1, upper);
+//	addContSplitArrayCst(cont1, 1, 1, upper);
+//	printSplitArray(&disc1);
+//	printContSplitArray(cont1);
+//
+//	addSplitArray(&disc1, 1, 0, upper);
+//	addContSplitArrayCst(cont1, 1, 0, upper);
+//	printSplitArray(&disc1);
+//	printContSplitArray(cont1);
+//
+//	addSplitArray(&disc1, 1, 1, upper);
+//	addContSplitArrayCst(cont1, 1, 1, upper);
+//	printSplitArray(&disc1);
+//	printContSplitArray(cont1);
+//
+////	addSplitArray(&disc2, 0.7, 0.2, upper);
+////	addContSplitArrayCst(cont2, 0.7, 0.2, upper);
+////	addSplitArray(&disc2, 0.4, 0.5, upper);
+////	addContSplitArrayCst(cont2, 0.4, 0.5, upper);
+//
+//	addSplitArray(&disc2, 1, 1, upper);
+//	addContSplitArrayCst(cont2, 1, 1, upper);
+//	printSplitArray(&disc2);
+//	printContSplitArray(cont2);
+//
+//	addSplitArray(&disc2, 1, 1, upper);
+//	addContSplitArrayCst(cont2, 1, 1, upper);
+//	printSplitArray(&disc2);
+//	printContSplitArray(cont2);
+//    
+//	addSplitArray(&disc2, 1, 1, upper);
+//	addContSplitArrayCst(cont2, 1, 1, upper);
+//	printSplitArray(&disc2);
+//	printContSplitArray(cont2);
+//
+//	weightedAddSplitArray(&disc, &disc1, 1, &disc2, &disc2);
+//	weightedAddContSplitArray(cont, cont1, 1, cont2, cont2);
+//	printSplitArray(&disc);
+//	printContSplitArray(cont);
+//	printContSplitArray(cont, upper);
+
 //    out_disc = 0; out_cont = 0;
-//	sliceSplitArray(&out_disc, 1, 1, &disc1, upper);
-//	sliceContSplitArray(&out_cont, 1, 1, cont1, upper);
+//	sliceSplitArray(&out_disc, 1, 1, &disc, upper);
+//	sliceContSplitArray(&out_cont, 1, 1, cont, upper);
 //	printf("%f vs %f\n", out_disc, out_cont);
 //
 //    out_disc = 0; out_cont = 0;
-//	sliceSplitArray(&out_disc, 1, 0, &disc1, upper);
-//	sliceContSplitArray(&out_cont, 1, 0, cont1, upper);
+//	sliceSplitArray(&out_disc, 1, 0, &disc, upper);
+//	sliceContSplitArray(&out_cont, 1, 0, cont, upper);
 //	printf("%f vs %f\n", out_disc, out_cont);
 //
 //    out_disc = 0; out_cont = 0;
-//	sliceSplitArray(&out_disc, 1, 0.1, &disc1, upper);
-//	sliceContSplitArray(&out_cont, 1, 0.1, cont1, upper);
+//	sliceSplitArray(&out_disc, 1, 0.1, &disc, upper);
+//	sliceContSplitArray(&out_cont, 1, 0.1, cont, upper);
 //	printf("%f vs %f\n", out_disc, out_cont);
-//
-////	addSplitArray(&disc1, 1, 0., upper);
-////	addContSplitArrayCst(cont1, 1, 0., upper);
-////	printSplitArray(&disc1);
-////	printContSplitArray(cont1);
-////
-////	addSplitArray(&disc1, 1, 1, upper);
-////	addContSplitArrayCst(cont1, 1, 1, upper);
-////	printSplitArray(&disc1);
-////	printContSplitArray(cont1);
-////
-////	addSplitArray(&disc1, 1, 0, upper);
-////	addContSplitArrayCst(cont1, 1, 0, upper);
-////	printSplitArray(&disc1);
-////	printContSplitArray(cont1);
-////
-////	addSplitArray(&disc1, 1, 1, upper);
-////	addContSplitArrayCst(cont1, 1, 1, upper);
-////	printSplitArray(&disc1);
-////	printContSplitArray(cont1);
-////
-//////	addSplitArray(&disc2, 0.7, 0.2, upper);
-//////	addContSplitArrayCst(cont2, 0.7, 0.2, upper);
-//////	addSplitArray(&disc2, 0.4, 0.5, upper);
-//////	addContSplitArrayCst(cont2, 0.4, 0.5, upper);
-////
-////	addSplitArray(&disc2, 1, 1, upper);
-////	addContSplitArrayCst(cont2, 1, 1, upper);
-////	printSplitArray(&disc2);
-////	printContSplitArray(cont2);
-////
-////	addSplitArray(&disc2, 1, 1, upper);
-////	addContSplitArrayCst(cont2, 1, 1, upper);
-////	printSplitArray(&disc2);
-////	printContSplitArray(cont2);
-////    
-////	addSplitArray(&disc2, 1, 1, upper);
-////	addContSplitArrayCst(cont2, 1, 1, upper);
-////	printSplitArray(&disc2);
-////	printContSplitArray(cont2);
-////
-////	weightedAddSplitArray(&disc, &disc1, 1, &disc2, &disc2);
-////	weightedAddContSplitArray(cont, cont1, 1, cont2, cont2);
-////	printSplitArray(&disc);
-////	printContSplitArray(cont);
-////	printContSplitArray(cont, upper);
-//
-////    out_disc = 0; out_cont = 0;
-////	sliceSplitArray(&out_disc, 1, 1, &disc, upper);
-////	sliceContSplitArray(&out_cont, 1, 1, cont, upper);
-////	printf("%f vs %f\n", out_disc, out_cont);
-////
-////    out_disc = 0; out_cont = 0;
-////	sliceSplitArray(&out_disc, 1, 0, &disc, upper);
-////	sliceContSplitArray(&out_cont, 1, 0, cont, upper);
-////	printf("%f vs %f\n", out_disc, out_cont);
-////
-////    out_disc = 0; out_cont = 0;
-////	sliceSplitArray(&out_disc, 1, 0.1, &disc, upper);
-////	sliceContSplitArray(&out_cont, 1, 0.1, cont, upper);
-////	printf("%f vs %f\n", out_disc, out_cont);
-//
-//	freeContSplitArray(cont, true);
-//	freeContSplitArray(cont1, true);
-//	freeContSplitArray(cont2, true);
-//	freeContSplitArray(cont3, true);
-//	exit(0);
-//}
+
+	freeContSplitArray(cont, true);
+	freeContSplitArray(cont1, true);
+	freeContSplitArray(cont2, true);
+	freeContSplitArray(cont3, true);
+	exit(0);
+}
 void Permutohedral::seqCompute_upper_minus_lower_ord_cont (float* out, const float* in, int value_size) const {
     //testSplitArrays();
 	// Shift all values by 1 such that -1 -> 0 (used for blurring)

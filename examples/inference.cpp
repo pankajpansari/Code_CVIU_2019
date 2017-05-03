@@ -8,7 +8,7 @@
 
 void image_inference(std::string image_file, std::string unary_file, std::string dataset_name, 
             std::string method, std::string results_path, float spc_std, float spc_potts, 
-            float bil_spcstd, float bil_colstd, float bil_potts, LP_inf_params & lp_params, int imskip)
+            float bil_spcstd, float bil_colstd, float bil_potts, LP_inf_params & lp_params)
 {
     img_size size = {-1, -1};
         
@@ -42,16 +42,17 @@ void image_inference(std::string image_file, std::string unary_file, std::string
     std::vector<int> pixel_ids;
     start = std::chrono::high_resolution_clock::now();
 
-    Q = unaries;
 
 //    double initial_discretized_energy = crf.assignment_energy_true(crf.currentMap(Q));
 //   std::cout << "Initial energy = " << initial_discretized_energy << std::endl;
  
+    Q = crf.unary_init();
     if (method == "mf5") {
         Q = crf.mf_inference(Q, 5);
     } else if (method == "mf") {
         Q = crf.mf_inference(Q);
     } else if (method == "submod") {
+        Q = unaries;
         Q = crf.submodular_inference(Q, size.width, size.height, output_path);
     } else if (method == "lrqp") {
         Q = crf.qp_inference(Q);
@@ -167,14 +168,15 @@ int main(int argc, char* argv[])
 {
     if (argc < 5) {
         std::cout << "./example_inference image_file unary_file method results_path "
-            "dataset_name downsampling spc_std spc_potts bil_spcstd bil_colstd bil_potts " << std::endl;
+            "dataset_name spc_std spc_potts bil_spcstd bil_colstd bil_potts " << std::endl;
         std::cout << "Example: ./example_inference /path/to/image /path/to/unary "
             "[unary, mf5, mf, lrqp, qpcccp, dc-neg, sg-lp, cg-lp, prox-lp, prox-lp-l, prox-lp-acc] "
-            "/path/to/results [MSRC, Pascal2010] [int] [float] [float] [float] [float] [float] " << std::endl;
+            "/path/to/results [MSRC, Pascal2010] [float] [float] [float] [float] [float] " << std::endl;
         return 1;
     }
 
 //./inference ../../data/2_14_s.bmp ../../data/2_14_s.c_unary submod . MSRC 1
+//./single_image_inference ../../data/2_14_s.bmp ../../data/2_14_s.c_unary mf . MSRC 1 7.467846 35.865959 11.209644 4.028773
 
     // set input, output paths and method
     std::string image_file = argv[1];
@@ -197,7 +199,6 @@ int main(int argc, char* argv[])
     float bil_colstd = 7.949970;
     float bil_potts = 1.699011;
 
-    int imskip = std::stoi(argv[6]);
 
     if (argc < 11) { 
         if (dataset_name == "Pascal2010") {
@@ -211,16 +212,16 @@ int main(int argc, char* argv[])
             std::cout << "Unrecognized dataset name, defaults to MSRC..." << std::endl;
         }         
     } else {
-        spc_std = std::stof(argv[7]);
-        spc_potts = std::stof(argv[8]);
-        bil_spcstd = std::stof(argv[9]);
-        bil_colstd = std::stof(argv[10]);
-        bil_potts = std::stof(argv[11]);
+        spc_std = std::stof(argv[6]);
+        spc_potts = std::stof(argv[7]);
+        bil_spcstd = std::stof(argv[8]);
+        bil_colstd = std::stof(argv[9]);
+        bil_potts = std::stof(argv[10]);
     }
 
     std::cout << "#COMMAND: " << argv[0] << " " << image_file << " " << unary_file << " " << method << " " 
         << results_path << " " << dataset_name << " " << spc_std << " " << spc_potts << " " << bil_spcstd << " "
-        << bil_colstd << " " << bil_potts << " " << imskip << " " << std::endl;
+        << bil_colstd << " " << bil_potts << " " << std::endl;
 
     //write command to key file
 //    std::size_t found = image_file.find_last_of("/\\");
@@ -244,7 +245,7 @@ int main(int argc, char* argv[])
     LP_inf_params lp_params;
 
     image_inference(image_file, unary_file, dataset_name, method, results_path, spc_std, spc_potts, 
-            bil_spcstd, bil_colstd, bil_potts, lp_params, imskip);
+            bil_spcstd, bil_colstd, bil_potts, lp_params);
 
     return 0;
 }

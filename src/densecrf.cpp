@@ -405,7 +405,7 @@ MatrixXf DenseCRF::qp_inference(const MatrixXf & init, int nb_iterations) const 
         // Take a step
         Q += optimal_step_size * sx;
         if (not valid_probability(Q)) {
-            std::cout << "Bad proba" << '\n';
+//            std::cout << "Bad proba" << '\n';
         }
         // Compute the gradient at the new estimates.
         grad += 2* optimal_step_size * psisx;
@@ -497,11 +497,11 @@ MatrixXf DenseCRF::concave_qp_cccp_inference(const MatrixXf & init) const {
                     if (num > 0) {
                         // Commented out code to identify bugs with this computation
                         if (num > 1e-6) {
-                            std::cout << "Shouldn't happen." << '\n';
-                            std::cout << "Cond score: " << grad.dot(cond_grad) << '\n';
-                            std::cout << "Point score: " << grad.dot(new_Q) << '\n';
-                            std::cout << num << '\n';
-                            std::cout  << '\n';
+//                            std::cout << "Shouldn't happen." << '\n';
+//                            std::cout << "Cond score: " << grad.dot(cond_grad) << '\n';
+//                            std::cout << "Point score: " << grad.dot(new_Q) << '\n';
+//                            std::cout << num << '\n';
+//                            std::cout  << '\n';
                         }
                         num = 0;
                     }
