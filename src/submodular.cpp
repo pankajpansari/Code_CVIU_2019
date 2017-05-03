@@ -82,7 +82,7 @@ void DenseCRF::greedyAlgorithm(MatrixXf &out, MatrixXf &grad){
 //    std::cout<<"Filtering time: "<< duration <<'\n';
 
 
-    out = unary + pairwise;
+    out = unary - pairwise; //-ve because original code makes use of negative Potts potential (in labelcompatibility.cpp), but we want to use positive weights
 
     //check equality constraint
 //    float constraintDiff = out.sum() - unary.sum();
