@@ -27,6 +27,16 @@ void getLeafNodes(node parent)
    return;
 }
 
+void getTl(node s){
+   if(s.id == 0){ //root assumed to have id 0
+        cout << "Query invalid for root" << endl;
+        return;
+   }
+   node parent = *(s.parent);
+   cout << "Weight = " << parent.weight[0] << endl;
+//   vector<node*> children = parent.children;
+}
+
 int main()
 {
     cout << "Hello World!" << endl;
@@ -68,6 +78,6 @@ int main()
 //    vector<float> b = G[node_num].weight;
 //    for(int i = 0; i < a.size(); i++)
 //        cout << "Children of node " + to_string(node_num) + " = " << (*a[i]).id << " weight = " << b[i] << endl;
-    getLeafNodes(G[0]);
+
     return 0;
 }
