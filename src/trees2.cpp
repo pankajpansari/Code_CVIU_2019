@@ -13,6 +13,20 @@ struct node{
     vector<float> weight;
 };
 
+void getLeafNodes(node parent)
+{
+   if(parent.children.size() == 0){
+      cout << "leaves = " << parent.id << endl;
+      return;
+   }
+   else{
+       for(int i = 0; i < parent.children.size(); i++){
+            getLeafNodes(*parent.children[i]);
+       }
+   }
+   return;
+}
+
 int main()
 {
     cout << "Hello World!" << endl;
@@ -47,10 +61,13 @@ int main()
         }
     }
 
-    int node_num = 3;
-    vector<node*> a = G[node_num].children;
-    vector<float> b = G[node_num].weight;
-    for(int i = 0; i < a.size(); i++)
-        cout << "Children of node " + to_string(node_num) + " = " << (*a[i]).id << " weight = " << b[i] << endl;
+//    int node_num = 3;
+//    vector<node*> a = G[node_num].children;
+//    if(a.size() == 0)
+//        cout << "Is null" << endl;
+//    vector<float> b = G[node_num].weight;
+//    for(int i = 0; i < a.size(); i++)
+//        cout << "Children of node " + to_string(node_num) + " = " << (*a[i]).id << " weight = " << b[i] << endl;
+    getLeafNodes(G[0]);
     return 0;
 }
