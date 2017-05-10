@@ -37,6 +37,18 @@ void getTl(node s){
 //   vector<node*> children = parent.children;
 }
 
+void getSubtrees(node root){
+    vector<node*> children = root.children;
+    for(int i = 0; i < children.size(); i++){
+       cout << "Subtree rooted at " << (*children[i]).id << endl;
+       getLeafNodes(*children[i]);
+       getTl(*children[i]);
+       getSubtrees(*children[i]);
+       cout << endl;
+    } 
+    return;
+}
+
 int main()
 {
     cout << "Hello World!" << endl;
@@ -78,6 +90,6 @@ int main()
 //    vector<float> b = G[node_num].weight;
 //    for(int i = 0; i < a.size(); i++)
 //        cout << "Children of node " + to_string(node_num) + " = " << (*a[i]).id << " weight = " << b[i] << endl;
-
+    getSubtrees(G[0]);
     return 0;
 }
