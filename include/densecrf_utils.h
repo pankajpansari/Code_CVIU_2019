@@ -3,6 +3,13 @@
 
 using namespace Eigen;
 
+struct node{
+    int id;
+    node* parent;
+    std::vector<node*> children;
+    std::vector<float> weight;
+};
+
 typedef MatrixXd MatrixP;
 typedef VectorXd VectorP;
 typedef double typeP;
@@ -86,3 +93,4 @@ float doLineSearch(const MatrixXf & Qs, const MatrixXf & Q, int iter, float prev
 float doLineSearch2(const MatrixXf & Qs, const MatrixXf & Q, int iter, float prevStep, std::string output_path);
 void getNegGradient(MatrixXf & negGrad, const MatrixXf & Q);
 void expAndNormalizeSubmod( MatrixXf & out, const MatrixXf & in);
+void readTree(std::vector<std::vector<int>> &subleaves, std::vector<float> &subweights, std::vector<int> &m);

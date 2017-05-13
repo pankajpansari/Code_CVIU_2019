@@ -605,3 +605,102 @@ void expAndNormalizeSubmod ( MatrixXf & out, const MatrixXf & in ) {
     }
 }
 
+/////////////////////////////
+/////  tree-utils /////
+/////////////////////////////
+
+    void getLeafNodes(node parent, std::vector<int> &leaf_vec)
+    {
+        using namespace std;
+       if(parent.children.size() == 0){
+          leaf_vec.push_back(parent.id);
+          return;
+       }
+       else{
+           for(int i = 0; i < parent.children.size(); i++){
+                getLeafNodes(*parent.children[i], leaf_vec);
+           }
+       }
+       return;
+    }
+
+    void getTl(node s, std::vector<float> &weight_factors, node root){
+    using namespace std;
+       if(s.id == root.id){ //root assumed to have id 0
+            return;
+       }
+       node parent = *(s.parent);
+       weight_factors.push_back(root.weight[0]/parent.weight[0]);
+    }
+
+    void getSubtrees(node parent, std::vector<std::vector<int>> &subleaves, std::vector<float> &weight_factors, node root){
+
+    using namespace std;
+        vector<node*> children = parent.children;
+        
+        for(int i = 0; i < children.size(); i++){
+           vector<int> leaf_vec;
+           getLeafNodes(*children[i], leaf_vec);
+           subleaves.push_back(leaf_vec);
+           getTl(*children[i], weight_factors, root);
+           getSubtrees(*children[i], subleaves, weight_factors, root);
+        } 
+        return;
+    }
+
+    node getRoot(std::vector<node> G){
+    for(int i = 0; i < G.size(); i++){
+        if(G[i].parent == NULL)
+            return G[i];
+    }
+    }
+
+    void get_m(std::vector<node> G, std::vector<int> &m){
+//        using namespace std;
+//        node root = getRoot(G);
+//        int m = 0;
+//    
+//        node next_parent = root;
+//        while(true){
+//            if(next_parent.children.size() == 0)
+//                break;
+//            else
+//                next_parent = *next_parent.children[0];
+//            m += 1;
+//        }    
+//        return m;
+    }
+
+    void readTree(std::vector<std::vector<int>> &subleaves, std::vector<float> &weight_factors, std::vector<int> &m){
+        using namespace std;
+
+        ifstream treefile("/home/pankaj/SubmodularInference/data/input/tests/trees/tree_stereo_l1.txt");
+        string s;
+
+        int nV;
+        getline(treefile, s);
+        istringstream ss(s);
+        ss >> nV;
+        
+        vector<node> G(nV);
+        for(int i = 0; i < G.size(); i++)
+            G[i].id = i;
+
+        int parent_id, child_id;
+        float weight;
+
+        while(getline(treefile, s)){
+            istringstream ss(s);
+            ss >> parent_id;
+            ss >> weight;
+            while(ss >> child_id){
+                G[parent_id].children.push_back(&G[child_id]);
+                G[parent_id].weight.push_back(weight);
+                G[child_id].parent = &G[parent_id];
+            }
+        }
+
+        node root = getRoot(G);
+        getSubtrees(root, subleaves, weight_factors, root);
+}
+
