@@ -210,10 +210,31 @@ void save_image(unsigned char * img, const img_size & size, const std::string & 
     cv::imwrite(path_to_output, imgMat);
 }
 
+void writePPM(unsigned char * char_img){
+   using namespace std;
+   ofstream imgFile;
+   imgFile.open("img.ppm");
+
+   int height = 288;
+   int width = 384;
+
+   imgFile << "P6" << endl;
+    imgFile << "384 288" << endl;
+    imgFile << "255" << endl;
+    for (int j=0; j < height; j++) {
+        for (int i=0; i < width; i++) {
+            imgFile << char_img[(i+j*width)*3+0];
+            imgFile << char_img[(i+j*width)*3+1];
+            imgFile << char_img[(i+j*width)*3+2];
+        }
+    }
+    imgFile.close();
+}
+
 
 unsigned char * load_image( const std::string & path_to_image, img_size & size){
     cv::Mat img = cv::imread(path_to_image);
-    cv::Vec3b intensity_temp = img.at<cv::Vec3b>(300,200); // this comes in BGR
+    cv::imwrite("./image.bmp", img);
     if(size.height != img.rows || size.width != img.cols) {
         std::cout << "Dimension doesn't correspond to unaries" << std::endl;
         if (size.height == -1) {
@@ -235,6 +256,7 @@ unsigned char * load_image( const std::string & path_to_image, img_size & size){
             char_img[(i+j*size.width)*3+2] = static_cast<char>(intensity.val[0]);
 	    }
     }
+//    writePPM(char_img);
     return char_img;
 }
 
@@ -298,6 +320,45 @@ MatrixXf load_unary( const std::string & path_to_unary, img_size& size, int max_
         }
     }
     return unaries;
+}
+
+MatrixXf load_unary_from_text(const std::string & path_to_unary, img_size& size) {
+
+    using namespace std;
+    fstream myfile(path_to_unary.c_str(), std::ios_base::in);
+    
+    int nvar = 0, nlabel = 0, temp = 0;
+    
+    myfile >> nvar >> nlabel >> temp >> temp;
+    
+    cout << "Parameters of the input file:" << endl << endl;
+    cout << "Number of variables = " << nvar << endl;
+    cout << "Number of labels = " << nlabel << endl;
+
+    assert(("Number of variables should be positive" &&  newInput.nvar > 0));
+    assert(("Number of labels should be positive" && newInput.nlabel > 0));
+    
+    myfile.get();
+    
+    MatrixXf unaries(nlabel, nvar);
+
+    for(int variable_count = 0; variable_count < nvar; variable_count++){
+    	VectorXf unary_current_variable(nvar);
+    	string line;
+    	getline(myfile, line);
+    	istringstream iss(line);
+    	double unary;
+        int unary_count = 0;
+    	while(iss >> unary){
+    		unary_current_variable[unary_count] = unary;
+                unary_count = unary_count + 1;
+    	}
+	assert(("One or more labels not assigned unary potential", unary_count == nlabel));
+        unaries.col(variable_count) = unary_current_variable;
+    }
+ 
+    cout << "Unaries read" << endl;
+   return unaries;
 }
 
 MatrixXf load_unary_rescaled( const std::string & path_to_unary, img_size& size, int imskip, int max_label) {
