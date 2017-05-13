@@ -13,10 +13,16 @@ void image_inference(std::string image_file, std::string unary_file, std::string
     img_size size = {-1, -1};
         
  //   MatrixXf unaries = load_unary_rescaled(unary_file, size, imskip);
-   MatrixXf unaries = load_unary_from_text(unary_file, size);
+ //  MatrixXf unaries = load_unary_from_text(unary_file, size);
+   MatrixXf unaries = load_unary(unary_file, size);
 //    unsigned char * img = load_rescaled_image(image_file, size, imskip);
    unsigned char * img = load_image(image_file, size);
-    
+//   size.width = 288;
+//   size.height = 384;
+
+//   size.width = 384;
+//   size.height = 288;
+
     // create densecrf object
     DenseCRF2D crf(size.width, size.height, unaries.rows());
     crf.setUnaryEnergy(unaries);
@@ -48,8 +54,10 @@ void image_inference(std::string image_file, std::string unary_file, std::string
  
     Q = crf.unary_init();
     if (method == "mf5") {
+        std::cout << "Starting mf inference " << std::endl;
         Q = crf.mf_inference(Q, 5);
     } else if (method == "mf") {
+        std::cout << "Starting mf inference " << std::endl;
         Q = crf.mf_inference(Q);
     } else if (method == "submod") {
         Q = unaries;
@@ -154,18 +162,18 @@ void image_inference(std::string image_file, std::string unary_file, std::string
     timing = std::chrono::duration_cast<std::chrono::duration<double>>(end-start).count();
     double final_energy = crf.compute_energy_true(Q);
     double discretized_energy = crf.assignment_energy_true(crf.currentMap(Q));
-    Eigen::VectorXd maxMarginal(size.width * size.height);
-    for(int i = 0; i < Q.cols(); i++){
-        VectorXd::Index maxind;
-        float max = Q.col(i).maxCoeff(&maxind);
-        maxMarginal[i] = maxind; 
-    }
-    std::ofstream file("labeling.txt");
-    if (file.is_open())
-      {
-             file << maxMarginal << std::endl;
-    }
-//    save_map(Q, size, output_path, dataset_name);
+//    Eigen::VectorXd maxMarginal(size.width * size.height);
+//    for(int i = 0; i < Q.cols(); i++){
+//        VectorXd::Index maxind;
+//        float max = Q.col(i).maxCoeff(&maxind);
+//        maxMarginal[i] = maxind; 
+//    }
+//    std::ofstream file("labeling.txt");
+//    if (file.is_open())
+//    {
+//             file << maxMarginal << std::endl;
+//    }
+    save_map(Q, size, output_path, dataset_name);
     if (!pixel_ids.empty()) save_less_confident_pixels(Q, pixel_ids, size, output_path, dataset_name);
     std::string txt_output = output_path;
     txt_output.replace(txt_output.end()-3, txt_output.end(),"txt");

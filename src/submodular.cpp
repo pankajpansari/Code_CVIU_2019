@@ -280,7 +280,7 @@ MatrixXf DenseCRF::submodular_inference( MatrixXf & init, int width, int height,
             }
  
           //save segmentation
-           expAndNormalizeSubmod(temp, -Q);
+           expAndNormalize(temp, -Q);
            save_map(temp, size, image_output, "MSRC");
 
             //write to console

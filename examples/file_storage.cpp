@@ -234,7 +234,6 @@ void writePPM(unsigned char * char_img){
 
 unsigned char * load_image( const std::string & path_to_image, img_size & size){
     cv::Mat img = cv::imread(path_to_image);
-    cv::imwrite("./image.bmp", img);
     if(size.height != img.rows || size.width != img.cols) {
         std::cout << "Dimension doesn't correspond to unaries" << std::endl;
         if (size.height == -1) {

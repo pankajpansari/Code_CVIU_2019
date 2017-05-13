@@ -211,6 +211,7 @@ MatrixXf DenseCRF::mf_inference (const MatrixXf & init) const {
         old_Q = Q;
         count++;
     }
+    std::cout << "Completed mf" << std::endl; 
     return Q;
 }
 
