@@ -293,6 +293,7 @@ MatrixXf DenseCRF::submodular_inference( MatrixXf & init, int width, int height,
 
    logFile.close();
    //convert Q to marginal probabilities
-   expAndNormalizeSubmod(Q, -Q); 
-   return Q;
+   MatrixXf marginal(M_, N_);
+   expAndNormalize(marginal, -Q); 
+   return marginal;
 }

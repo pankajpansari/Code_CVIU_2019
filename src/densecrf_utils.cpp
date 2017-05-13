@@ -595,15 +595,7 @@ void getNegGradient(MatrixXf & negGrad, const MatrixXf & Q){
 	}
 }
 
-void expAndNormalizeSubmod ( MatrixXf & out, const MatrixXf & in ) {
-    out.resize( in.rows(), in.cols() );
-    for( int i=0; i<out.cols(); i++ ){
-        VectorXf b = in.col(i);
-        b.array() -= b.minCoeff();
-        b = b.array().exp();
-        out.col(i) = b / b.array().sum();
-    }
-}
+
 
 /////////////////////////////
 /////  tree-utils /////
