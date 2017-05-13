@@ -13,21 +13,6 @@
 #include "pairwise.h"
 #include "file_storage.hpp"
 
-void DenseCRF::getConditionalGradient(MatrixXf &Qs, MatrixXf & Q){
-    //current solution is the input matrix (in)
-    //conditional gradient is output
-
-        M_ = Q.rows();
-        N_ = Q.cols();
-
-	MatrixXf negGrad( M_, N_ );
-	getNegGradient(negGrad, Q); //negative gradient
-
-        Qs.fill(0);
-	greedyAlgorithm(Qs, negGrad);	
-        
-}
-
 void DenseCRF::compareWithBf(MatrixXf &pairwise_filter, MatrixXf & grad){
 
     MatrixXf pairwise_bf = MatrixXf::Zero(M_, N_);
@@ -45,6 +30,75 @@ void DenseCRF::compareWithBf(MatrixXf &pairwise_filter, MatrixXf & grad){
     std::cout << "Filter o/p norm = " << pairwise_filter.norm() << std::endl;
     std::cout << "Bf o/p norm = " << pairwise_bf.norm() << std::endl;
 
+}
+
+void DenseCRF::getConditionalGradient_rhst(MatrixXf &Qs, MatrixXf & Q){
+
+    using namespace std;
+    vector<vector<int>> subleaves;
+    vector<float> weight_factors;
+    vector<int> m(16);
+     for(int i = 0; i < 16; i++){
+          m[i] = i + 1;
+//          m[i] = 1;
+     } 
+    readTree(subleaves, weight_factors, m);
+
+    M_ = Q.rows();
+    N_ = Q.cols();
+
+
+    Qs.fill(0);
+    //get unaries
+    MatrixXf unary = unary_->get();   
+    for(int i = 0; i < M_; i++){
+        unary.row(i) = unary.row(i).array()/m[i];
+    }
+
+    MatrixXf negGrad( M_, N_ );
+    getNegGradient(negGrad, Q); //negative gradient
+       
+    //get pairwise
+    MatrixXf pairwise = MatrixXf::Zero(M_, N_);
+    applyFilter(pairwise, negGrad);
+ 
+//    cout << "m = " << m << endl;
+    for(int i = 0; i < subleaves.size(); i++){
+        MatrixXf pairwise_temp = pairwise;
+ //       cout << "Subtree = " << i << endl;
+
+        
+         //rescale pairwise
+  //       cout << "Weight factor = " << weight_factors[i] << endl;
+         pairwise_temp = pairwise_temp.array()/weight_factors[i];
+   
+         MatrixXf temp = unary - pairwise_temp; //-ve because original code makes use of negative Potts potential (in labelcompatibility.cpp), but we want to use positive weights
+    
+         MatrixXf temp2 = MatrixXf::Zero(M_, N_);
+         //Retain only columns for L(T)
+   //      cout << "Active labels = " << endl;
+         for(int j = 0; j < subleaves[i].size(); j++){
+             int label_lt = subleaves[i][j];
+    //         cout << label_lt << " ";
+             temp2.row(label_lt) = temp.row(label_lt);
+         } 
+     //    cout << endl; 
+         Qs += temp2; 
+    }
+}
+
+void DenseCRF::getConditionalGradient(MatrixXf &Qs, MatrixXf & Q){
+    //current solution is the input matrix (in)
+    //conditional gradient is output
+
+        M_ = Q.rows();
+        N_ = Q.cols();
+
+	MatrixXf negGrad( M_, N_ );
+	getNegGradient(negGrad, Q); //negative gradient
+
+        Qs.fill(0);
+	greedyAlgorithm(Qs, negGrad);	
 }
 
 void DenseCRF::greedyAlgorithm(MatrixXf &out, MatrixXf &grad){
@@ -190,9 +244,9 @@ MatrixXf DenseCRF::submodular_inference( MatrixXf & init, int width, int height,
       //for debugging purposes - getting max-marginal solutions
 
  //      std::cout << "Iter = " << k << std::endl;
-      getNegGradient(negGrad, Q); //negative gradient
-
-      greedyAlgorithm(Qs, negGrad);	
+        
+    getConditionalGradient(Qs, Q);
+//    getConditionalGradient_rhst(Qs, Q);
     
 //      dualGap = dotProduct(-negGrad, Qs - Q, dot_tmp);
 
@@ -209,7 +263,6 @@ MatrixXf DenseCRF::submodular_inference( MatrixXf & init, int width, int height,
       //write to log file
       logFile << k << " " << objVal << " " <<  duration << " " << step << std::endl;
 //      std::cout << k << " " << objVal << " " <<  duration << " " << step << std::endl;
-
 
       if(k == 10 || k == 100){
             //name the segmented image and Q files
