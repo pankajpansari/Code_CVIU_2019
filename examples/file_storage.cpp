@@ -465,6 +465,7 @@ for(int i=0; i<estimates.cols(); ++i) {
             int row = (i - col)/size.width;
             img.at<cv::Vec3b>(row, col) = intensity;
         }
+    cv::transpose(img, img);
     } else {
         const unsigned char*  legend;
         if (dataset_name == "MSRC") {
