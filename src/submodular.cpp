@@ -110,21 +110,6 @@ void DenseCRF::greedyAlgorithm(MatrixXf &out, MatrixXf &grad){
     //negative gradient at current point is input
     //LP solution is the output
 
-//    MatrixXf out1(M_, N_), out2(M_, N_);
-//    std::cout << "Doing full filtering: "<< std::endl;
-//    applyFullFilter(out1, grad);
-//    std::cout << "Doing full bf: " << std::endl;
-//    applyFullBruteForce(out2, grad);
-//    MatrixP dot_tmp(M_, N_);
-//    double costh = dotProduct(out1, out2, dot_tmp)/
-//       (sqrt(dotProduct(out1, out1, dot_tmp))*sqrt(dotProduct(out2, out2, dot_tmp)));
-//    std::cout << "Full bf-filter #cos-theta: " << costh << std::endl;
-
-//    grad = grad.array() + 1;
-//    grad = grad.array()/2;
-//    assert(grad.minCoeff() >= 0);
-//    assert(grad.maxCoeff() <= 1);
-
     out.fill(0);
     //get unaries
     MatrixXf unary = unary_->get();   
@@ -136,73 +121,11 @@ void DenseCRF::greedyAlgorithm(MatrixXf &out, MatrixXf &grad){
     double duration = 0;
     applyFilter(pairwise, grad);
     pairwise = 0.5*pairwise.array();
-//   duration = ( std::clock() - start ) / (double) CLOCKS_PER_SEC;
-//    std::cout<<"Filtering time: "<< duration <<'\n';
-
 
     out = unary - pairwise; //-ve because original code makes use of negative Potts potential (in labelcompatibility.cpp), but we want to use positive weights
 
-    //check equality constraint
-//    float constraintDiff = out.sum() - unary.sum();
-//    std::cout << "Pairwise sum = " << pairwise.sum() << std::endl;
-//    std::cout << "out sum = " << out.sum() << std::endl;
-//    std::cout << "unary sum = " << unary.sum() << std::endl;
-//    std::cout << "Constraint difference = " << constraintDiff << std::endl; 
-//
-//    compareWithBf(pairwise, grad);
-    //check singleton constraints
-//    for(int j = 0; j < M_; j++)
-//        for(int i = 0; i < N_; i++)
-//            assert(out(j, i) <= getSubmodFnVal(j, i, unary) && "s(A) <= F(A) for singleton sets violated"); 
-//    
-    //project on plane if required
-//    MatrixXf out_proj = out.array() - ((out - unary).sum()/(N_*M_));
-//    out = out_proj; 
 }
 
-void DenseCRF::greedyAlgorithm_dc(MatrixXf &out, MatrixXf &grad){
-
-    //negative gradient at current point is input
-    //LP solution is the output
-
-    out.fill(0);
-    //get unaries
-    MatrixXf unary = unary_->get();   
-    
-    //get pairwise
-    MatrixXf pairwise = MatrixXf::Zero(M_, N_);
-    applyFilter_dc(pairwise, grad);
-
-    out = unary + pairwise;
-
-}
-
-void DenseCRF::greedyAlgorithm_bf(MatrixXf &out, MatrixXf &grad){
-
-    //negative gradient at current point is input
-    //LP solution is the output
-
-    out.fill(0);
-    //get unaries
-    MatrixXf unary = unary_->get();   
-    
-    //get pairwise
-    MatrixXf pairwise = MatrixXf::Zero(M_, N_);
-//    grad = grad + MatrixXf::Constant(M_, N_, 0.5);
-//    grad = grad.array()*PI;
-//    grad = grad.tan()
-    applyBruteForce(pairwise, grad);
-//    std::cout << "Doing bf computation" << std::endl;
-//    applyBruteForce(pairwise_bf, grad);
-//
-//    MatrixP dot_tmp(M_, N_);
-//    double costh = dotProduct(pairwise, pairwise_bf, dot_tmp)/
-//       (sqrt(dotProduct(pairwise, pairwise, dot_tmp))*sqrt(dotProduct(pairwise_bf, pairwise_bf, dot_tmp)));
-//    std::cout << "bf-filter #cos-theta: " << costh << std::endl;
-//    //check the angle
-
-    out = unary + pairwise;
-}
 
 MatrixXf DenseCRF::submodular_inference( MatrixXf & init, int width, int height, std::string output_path){
 
