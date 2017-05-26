@@ -466,7 +466,7 @@ float doLineSearch(const MatrixXf & Qs, const MatrixXf & Q, int iter, float prev
 	//do binary search for line search
 	float rangeStart = 0;
 //	float rangeEnd = prevStep; 
-	float rangeEnd = 0.01; 
+	float rangeEnd = 0.001; 
 
 	float currentStep = (rangeStart + rangeEnd)/2;
 //	float currentStep = prevStep;
@@ -477,7 +477,7 @@ float doLineSearch(const MatrixXf & Qs, const MatrixXf & Q, int iter, float prev
         MatrixXf Q1 = MatrixXf::Zero(Q.rows(), Q.cols());
         MatrixXf Q2 = MatrixXf::Zero(Q.rows(), Q.cols());
 
-	for(int binaryIter = 0; binaryIter <= 10; binaryIter++){	
+	for(int binaryIter = 0; binaryIter <= 30; binaryIter++){	
 		candidateStep1 = (rangeStart + currentStep)/2;
 		candidateStep2 = (rangeEnd + currentStep)/2;
 
@@ -622,12 +622,13 @@ void getNegGradient(MatrixXf & negGrad, const MatrixXf & Q){
             return;
        }
        node parent = *(s.parent);
-       weight_factors.push_back(root.weight[0]/parent.weight[0]);
+//       weight_factors.push_back(root.weight[0]/parent.weight[0]);
+       weight_factors.push_back(parent.weight[0]);
     }
 
     void getSubtrees(node parent, std::vector<std::vector<int>> &subleaves, std::vector<float> &weight_factors, node root){
 
-    using namespace std;
+        using namespace std;
         vector<node*> children = parent.children;
         
         for(int i = 0; i < children.size(); i++){
@@ -663,10 +664,10 @@ void getNegGradient(MatrixXf & negGrad, const MatrixXf & Q){
 //        return m;
     }
 
-    void readTree(std::vector<std::vector<int>> &subleaves, std::vector<float> &weight_factors, std::vector<int> &m){
+    void readTree(std::vector<std::vector<int>> &subleaves, std::vector<float> &weight_factors, std::vector<int> &m, const std::string filename){
         using namespace std;
 
-        ifstream treefile("/home/pankaj/SubmodularInference/data/input/tests/trees/tree_stereo_l1.txt");
+        ifstream treefile(filename);
         string s;
 
         int nV;

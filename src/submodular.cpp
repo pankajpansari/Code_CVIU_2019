@@ -37,12 +37,11 @@ void DenseCRF::getConditionalGradient_rhst(MatrixXf &Qs, MatrixXf & Q){
     using namespace std;
     vector<vector<int>> subleaves;
     vector<float> weight_factors;
-    vector<int> m(16);
-     for(int i = 0; i < 16; i++){
-          m[i] = i + 1;
-//          m[i] = 1;
+    vector<int> m(M_);
+     for(int i = 0; i < M_; i++){
+//          m[i] = i + 1;
+          m[i] = 2;
      } 
-    readTree(subleaves, weight_factors, m);
 
     M_ = Q.rows();
     N_ = Q.cols();
@@ -63,14 +62,18 @@ void DenseCRF::getConditionalGradient_rhst(MatrixXf &Qs, MatrixXf & Q){
     applyFilter(pairwise, negGrad);
  
 //    cout << "m = " << m << endl;
-    for(int i = 0; i < subleaves.size(); i++){
+    std::string dirname = "/home/pankaj/SubmodularInference/data/input/tests/trees/truncated_l1_L_16_M_5/";
+    for(int j = 0; j < 5; j++){ //number of trees
+        std::string filename = dirname + "tree_" + to_string(j) + ".txt";
+    readTree(subleaves, weight_factors, m, filename);
+   for(int i = 0; i < subleaves.size(); i++){
         MatrixXf pairwise_temp = pairwise;
  //       cout << "Subtree = " << i << endl;
 
         
          //rescale pairwise
   //       cout << "Weight factor = " << weight_factors[i] << endl;
-         pairwise_temp = pairwise_temp.array()/weight_factors[i];
+         pairwise_temp = weight_factors[i] * pairwise_temp.array();
    
          MatrixXf temp = unary - pairwise_temp; //-ve because original code makes use of negative Potts potential (in labelcompatibility.cpp), but we want to use positive weights
     
@@ -84,6 +87,7 @@ void DenseCRF::getConditionalGradient_rhst(MatrixXf &Qs, MatrixXf & Q){
          } 
      //    cout << endl; 
          Qs += temp2; 
+    }
     }
 }
 
@@ -131,7 +135,7 @@ void DenseCRF::greedyAlgorithm(MatrixXf &out, MatrixXf &grad){
     clock_t start = std::clock();
     double duration = 0;
     applyFilter(pairwise, grad);
-
+    pairwise = 0.5*pairwise.array();
 //   duration = ( std::clock() - start ) / (double) CLOCKS_PER_SEC;
 //    std::cout<<"Filtering time: "<< duration <<'\n';
 
@@ -239,7 +243,7 @@ MatrixXf DenseCRF::submodular_inference( MatrixXf & init, int width, int height,
     logFile << "0 " << objVal << " " <<  duration << " " << step << std::endl;
   //  std::cout << "Iter: 0   Obj value = " << objVal << "  Step size = 0    Time = 0s" << std::endl;
 
-    for(int k = 1; k <= 10; k++){
+    for(int k = 1; k <= 1000; k++){
 
       //for debugging purposes - getting max-marginal solutions
 
@@ -264,7 +268,7 @@ MatrixXf DenseCRF::submodular_inference( MatrixXf & init, int width, int height,
       logFile << k << " " << objVal << " " <<  duration << " " << step << std::endl;
 //      std::cout << k << " " << objVal << " " <<  duration << " " << step << std::endl;
 
-      if(k == 10 || k == 100){
+      if(k % 20 == 0){
             //name the segmented image and Q files
             if(k == 10){
                 image_output = output_path;
@@ -281,7 +285,7 @@ MatrixXf DenseCRF::submodular_inference( MatrixXf & init, int width, int height,
  
           //save segmentation
            expAndNormalize(temp, -Q);
-           save_map(temp, size, image_output, "MSRC");
+           save_map(temp, size, image_output, "Stereo_special");
 
             //write to console
  //           std::cout << "Iter: " << (k) << "  Obj value = " << objVal << "  Step size = " << step << " Time = " << duration << "s" << std::endl;
@@ -295,5 +299,6 @@ MatrixXf DenseCRF::submodular_inference( MatrixXf & init, int width, int height,
    //convert Q to marginal probabilities
    MatrixXf marginal(M_, N_);
    expAndNormalize(marginal, -Q); 
+ //  return Q;
    return marginal;
 }

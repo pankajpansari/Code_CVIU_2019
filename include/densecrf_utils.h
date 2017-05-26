@@ -93,4 +93,4 @@ float doLineSearch(const MatrixXf & Qs, const MatrixXf & Q, int iter, float prev
 float doLineSearch2(const MatrixXf & Qs, const MatrixXf & Q, int iter, float prevStep, std::string output_path);
 void getNegGradient(MatrixXf & negGrad, const MatrixXf & Q);
 void expAndNormalizeSubmod( MatrixXf & out, const MatrixXf & in);
-void readTree(std::vector<std::vector<int>> &subleaves, std::vector<float> &subweights, std::vector<int> &m);
+void readTree(std::vector<std::vector<int>> &subleaves, std::vector<float> &subweights, std::vector<int> &m, const std::string tree_file);
