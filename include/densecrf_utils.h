@@ -88,9 +88,13 @@ void update_restricted_matrix(MatrixXf & out, const MatrixXf & in, const std::ve
 void update_extended_matrix(MatrixXf & out, const MatrixXf & in, const std::vector<int> & pindices);
 bool fileExists(const std::string& filename);
 float getObj(const MatrixXf & Q);
+float getObj_rhst(const MatrixXf & Q, const std::string filename);
 float getDeriv(const MatrixXf & Qs, const MatrixXf & Q, float step);
 float doLineSearch(const MatrixXf & Qs, const MatrixXf & Q, int iter, float prevStep);
 float doLineSearch2(const MatrixXf & Qs, const MatrixXf & Q, int iter, float prevStep, std::string output_path);
 void getNegGradient(MatrixXf & negGrad, const MatrixXf & Q);
-void expAndNormalizeSubmod( MatrixXf & out, const MatrixXf & in);
-void readTree(std::vector<std::vector<int>> &subleaves, std::vector<float> &subweights, std::vector<int> &m, const std::string tree_file);
+void readTree(std::vector<std::vector<int>> &subleaves, std::vector<float> &subweights, const std::string tree_file);
+//void getNegGradient_rhst(MatrixXd & negGrad, const MatrixXd & Q, std::vector<node> G);
+void getNegGradient_rhst(MatrixXf & negGrad, const MatrixXf & Q, const std::string filename);
+void getdim(MatrixXf &A);
+void getMarginals_rhst(MatrixXf & out, const MatrixXf & in, const std::string filename);

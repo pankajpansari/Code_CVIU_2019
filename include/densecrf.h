@@ -116,8 +116,9 @@ float computeGaussianWeight(const VectorXf & feature_a, const VectorXf & feature
 void getSubmodFnVal(int j, int i, MatrixXf &unary);
 void compareWithBf(MatrixXf &pairwise_filter, MatrixXf & grad);
 MatrixXf submodular_inference(MatrixXf & init, int width, int height, std::string output_path);
+MatrixXf submodular_inference_rhst(MatrixXf & init, int width, int height, std::string output_path, std::string tree_file);
 void getConditionalGradient(MatrixXf & Qs, MatrixXf & Q);
-void getConditionalGradient_rhst(MatrixXf & Qs, MatrixXf & Q);
+void getConditionalGradient_rhst(MatrixXf &Qs, MatrixXf & Q, const std::string filename, const MatrixXf &unary_meta);
 MatrixXf getFeatureMat(const unsigned char* im);
 //void greedyAlgorithmBruteForce(MatrixXf & Qs, MatrixXf &Q);
 void greedyAlgorithm(MatrixXf &out, MatrixXf &grad);
@@ -126,6 +127,7 @@ void greedyAlgorithm_dc(MatrixXf &out, MatrixXf &grad);
 void applyBruteForce(MatrixXf & Qs, MatrixXf &Q);
 void applyBruteForceAJ(MatrixXf & Qs, MatrixXf &Q);
 void applyFilter(MatrixXf & Qs, MatrixXf &Q);
+void applyFilter_rhst(MatrixXf & Qs, MatrixXf &Q);
 void applyFilter_dc(MatrixXf & Qs, MatrixXf &Q);
 void applyFullBruteForce(MatrixXf &out, MatrixXf &in);
 void applyFullFilter(MatrixXf &out, MatrixXf &in);

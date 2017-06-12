@@ -352,11 +352,13 @@ MatrixXf load_unary_from_text(const std::string & path_to_unary, img_size& size)
     		unary_current_variable[unary_count] = unary;
                 unary_count = unary_count + 1;
     	}
-	assert(("One or more labels not assigned unary potential", unary_count == nlabel));
+        if(unary_count != nlabel)
+            cout << "One or more labels not assigned unary potential" << endl;
+//            assert(("One or more labels not assigned unary potential", unary_count == nlabel));
         unaries.col(variable_count) = unary_current_variable;
     }
  
-    cout << "Unaries read" << endl;
+   cout << "Unaries read" << endl;
    return unaries;
 }
 
@@ -609,7 +611,6 @@ void write_binary(std::string file_output, const MatrixXf& matrix){
     out.write((char*) (&cols), sizeof(typename MatrixXf::Index));
     out.write((char*) matrix.data(), rows*cols*sizeof(typename MatrixXf::Scalar) );
     out.close();
-
 }
 }
 

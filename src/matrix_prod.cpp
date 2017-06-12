@@ -62,11 +62,9 @@ void DenseCRF::getSubmodFnVal(int j, int i, MatrixXf &unary){
 void DenseCRF::applyBruteForce(MatrixXf &out, MatrixXf &Q){
 
 	out.fill(0);
-	int count = 0;
 	for(int j = 0; j < M_; j++){
 		for(int a = 0; a < N_; a++){
 			VectorXf feature_a = featureMat_.col(a);
-                        count = 0;
 			for(int b = 0; b < N_; b++){
 				if(a != b){ 
 				VectorXf feature_b = featureMat_.col(b);
@@ -133,6 +131,32 @@ void DenseCRF::applyFilter(MatrixXf &out, MatrixXf &in){
 //      std::cout << out << std::endl;
 //      std::cout << std::endl << std::endl;
 }
+void DenseCRF::applyFilter_rhst(MatrixXf &out, MatrixXf &in){
+    //negative gradient at current point is input
+    //matrix-matrix product is output
+	out.fill(0);
+        int nMeta = in.rows();
+        int nVar = in.cols();
+        MatrixXf tmp = MatrixXf::Zero(nMeta, nVar);
+        MatrixXf rescaled_in = MatrixXf::Zero(nMeta, nVar);
+
+        std::cout << "in dim = " << in.rows() << " " << in.cols() << std::endl; 
+        std::cout << "out dim = " << out.rows() << " " << out.cols() << std::endl; 
+        std::cout << "tmp dim = " << tmp.rows() << " " << tmp.cols() << std::endl; 
+        std::cout << "rescaled_in dim = " << rescaled_in.rows() << " " << rescaled_in.cols() << std::endl; 
+        rescale(rescaled_in, in);
+
+    	for (int k = 0; k < pairwise_.size(); ++k) {
+                std::cout << "k = " << k << std::endl;
+            std::cout <<"In applyfilter(), M_ = " << M_ << std::endl;
+		pairwise_[k]->apply_upper_minus_lower_ord(tmp, rescaled_in);
+		out += tmp;
+	}
+//      std::cout << "Filter output" << std::endl;
+//      std::cout << out << std::endl;
+//      std::cout << std::endl << std::endl;
+}
+
 
 void DenseCRF::applyFilter_dc(MatrixXf &out, MatrixXf &in){
 

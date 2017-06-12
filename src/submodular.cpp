@@ -32,65 +32,6 @@ void DenseCRF::compareWithBf(MatrixXf &pairwise_filter, MatrixXf & grad){
 
 }
 
-void DenseCRF::getConditionalGradient_rhst(MatrixXf &Qs, MatrixXf & Q){
-
-    using namespace std;
-    vector<vector<int>> subleaves;
-    vector<float> weight_factors;
-    vector<int> m(M_);
-     for(int i = 0; i < M_; i++){
-//          m[i] = i + 1;
-          m[i] = 2;
-     } 
-
-    M_ = Q.rows();
-    N_ = Q.cols();
-
-
-    Qs.fill(0);
-    //get unaries
-    MatrixXf unary = unary_->get();   
-    for(int i = 0; i < M_; i++){
-        unary.row(i) = unary.row(i).array()/m[i];
-    }
-
-    MatrixXf negGrad( M_, N_ );
-    getNegGradient(negGrad, Q); //negative gradient
-       
-    //get pairwise
-    MatrixXf pairwise = MatrixXf::Zero(M_, N_);
-    applyFilter(pairwise, negGrad);
- 
-//    cout << "m = " << m << endl;
-    std::string dirname = "/home/pankaj/SubmodularInference/data/input/tests/trees/truncated_l1_L_16_M_5/";
-    for(int j = 0; j < 5; j++){ //number of trees
-        std::string filename = dirname + "tree_" + to_string(j) + ".txt";
-    readTree(subleaves, weight_factors, m, filename);
-   for(int i = 0; i < subleaves.size(); i++){
-        MatrixXf pairwise_temp = pairwise;
- //       cout << "Subtree = " << i << endl;
-
-        
-         //rescale pairwise
-  //       cout << "Weight factor = " << weight_factors[i] << endl;
-         pairwise_temp = weight_factors[i] * pairwise_temp.array();
-   
-         MatrixXf temp = unary - pairwise_temp; //-ve because original code makes use of negative Potts potential (in labelcompatibility.cpp), but we want to use positive weights
-    
-         MatrixXf temp2 = MatrixXf::Zero(M_, N_);
-         //Retain only columns for L(T)
-   //      cout << "Active labels = " << endl;
-         for(int j = 0; j < subleaves[i].size(); j++){
-             int label_lt = subleaves[i][j];
-    //         cout << label_lt << " ";
-             temp2.row(label_lt) = temp.row(label_lt);
-         } 
-     //    cout << endl; 
-         Qs += temp2; 
-    }
-    }
-}
-
 void DenseCRF::getConditionalGradient(MatrixXf &Qs, MatrixXf & Q){
     //current solution is the input matrix (in)
     //conditional gradient is output

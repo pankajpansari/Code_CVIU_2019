@@ -90,8 +90,8 @@ void sortRows(const MatrixXf & M, MatrixXi & ind) {
 
     for(int i=0; i<nbrRows; ++i) {
         std::sort(ind.data()+i*nbrCols,
-                  ind.data()+(i+1)*nbrCols,
-                  [&M, i](int a, int b){return M(i, a)>M(i, b);});
+                ind.data()+(i+1)*nbrCols,
+                [&M, i](int a, int b){return M(i, a)>M(i, b);});
     }
 
     ind.transposeInPlace();
@@ -108,10 +108,10 @@ void sortCols(const MatrixXf & M, MatrixXi & ind) {
     // indices for the cols are already contiguous in memory
     for(int i=0; i<nbrCols; ++i) {
         std::sort(ind.data()+i*nbrRows,
-                  ind.data()+(i+1)*nbrRows,
-                  [&M, i](int a, int b){
-                    return M(a, i)>M(b, i);
-                  });
+                ind.data()+(i+1)*nbrRows,
+                [&M, i](int a, int b){
+                return M(a, i)>M(b, i);
+                });
     }
 
 }
@@ -336,26 +336,26 @@ LP_inf_params::LP_inf_params(float prox_reg_const, float dual_gap_tol, float pro
         int qp_max_iter, float qp_tol, float qp_const, 
         bool best_int, bool accel_prox, 
         float less_confident_percent, float confidence_tol):
-        prox_reg_const(prox_reg_const), dual_gap_tol(dual_gap_tol), prox_energy_tol(prox_energy_tol), 
-        prox_max_iter(prox_max_iter), fw_max_iter(fw_max_iter), 
-        qp_max_iter(qp_max_iter), qp_tol(qp_tol), qp_const(qp_const), 
-        best_int(best_int), accel_prox(accel_prox),
-        less_confident_percent(less_confident_percent), confidence_tol(confidence_tol) {}
+    prox_reg_const(prox_reg_const), dual_gap_tol(dual_gap_tol), prox_energy_tol(prox_energy_tol), 
+    prox_max_iter(prox_max_iter), fw_max_iter(fw_max_iter), 
+    qp_max_iter(qp_max_iter), qp_tol(qp_tol), qp_const(qp_const), 
+    best_int(best_int), accel_prox(accel_prox),
+    less_confident_percent(less_confident_percent), confidence_tol(confidence_tol) {}
 
-LP_inf_params::LP_inf_params() {
-    prox_reg_const = 0.1;   
-    dual_gap_tol = 1e3;     
-    prox_energy_tol = 1e3;      
-    prox_max_iter = 10;     
-    fw_max_iter = 5;        
-    qp_max_iter = 1000;     
-    qp_tol = 1000;          
-    qp_const = 1e-16;           
-    best_int = true;
-    accel_prox = true;
-    less_confident_percent = 0;  // don't check for less confident pixels
-    confidence_tol = 0.95;
-}
+    LP_inf_params::LP_inf_params() {
+        prox_reg_const = 0.1;   
+        dual_gap_tol = 1e3;     
+        prox_energy_tol = 1e3;      
+        prox_max_iter = 10;     
+        fw_max_iter = 5;        
+        qp_max_iter = 1000;     
+        qp_tol = 1000;          
+        qp_const = 1e-16;           
+        best_int = true;
+        accel_prox = true;
+        less_confident_percent = 0;  // don't check for less confident pixels
+        confidence_tol = 0.95;
+    }
 
 LP_inf_params::LP_inf_params(const LP_inf_params& params) {
     prox_reg_const = params.prox_reg_const;
@@ -375,17 +375,17 @@ LP_inf_params::LP_inf_params(const LP_inf_params& params) {
 // rescale Q to be within [0,1] -- order of Q values preserved!
 void rescale(MatrixXf & out, const MatrixXf & Q) {
     out = Q;
-    float minval, maxval;
+    float minval = 0 , maxval = 0;
     // don't do label-wise rescaling -> introduces different error in each label!
     // but one rescaling for teh entire matrix
     minval = out.minCoeff();
-//    std::cout << "Min val = " << minval << std::endl;
+    //    std::cout << "Min val = " << minval << std::endl;
     out = out.array() - minval;
     maxval = out.maxCoeff();
- //   std::cout << "Max val = " << maxval << std::endl;
+    std::cout << "Max val = " << maxval << std::endl;
     assert(maxval >= 0);
     if (maxval > 0) out /= maxval;
-  //  std::cout << out << std::endl;
+    //  std::cout << out << std::endl;
 }
 
 // make a step of qp_gamma: -- \cite{NNQP solver Xiao and Chen 2014} - O(n) implementation!!
@@ -397,7 +397,7 @@ void qp_gamma_step(VectorXf & v_gamma, const VectorXf & v_pos_h, const VectorXf 
     // abs_C: abs(C)- elementwise
     float sum = v_gamma.sum();
     v_tmp2.fill(sum);
-    
+
     v_tmp = v_tmp2 - v_gamma;
     v_tmp *= (2*lambda/float(M));  // 2 * neg_C * v_gamma
     v_step = v_tmp + v_pos_h;
@@ -463,136 +463,135 @@ bool fileExists(const std::string& filename)
 
 float doLineSearch(const MatrixXf & Qs, const MatrixXf & Q, int iter, float prevStep){
 
-	//do binary search for line search
-	float rangeStart = 0;
-//	float rangeEnd = prevStep; 
-	float rangeEnd = 0.001; 
+    //do binary search for line search
+    float rangeStart = 0;
+    //	float rangeEnd = prevStep; 
+    float rangeEnd = 0.001; 
 
-	float currentStep = (rangeStart + rangeEnd)/2;
-//	float currentStep = prevStep;
-        float candidateStep1 = 0, candidateStep2 = 0;
-        float obj1 = 0, obj2 = 0;
-//        float epsilon = 1e-7;
+    float currentStep = (rangeStart + rangeEnd)/2;
+    //	float currentStep = prevStep;
+    float candidateStep1 = 0, candidateStep2 = 0;
+    float obj1 = 0, obj2 = 0;
+    //        float epsilon = 1e-7;
 
-        MatrixXf Q1 = MatrixXf::Zero(Q.rows(), Q.cols());
-        MatrixXf Q2 = MatrixXf::Zero(Q.rows(), Q.cols());
+    MatrixXf Q1 = MatrixXf::Zero(Q.rows(), Q.cols());
+    MatrixXf Q2 = MatrixXf::Zero(Q.rows(), Q.cols());
 
-	for(int binaryIter = 0; binaryIter <= 30; binaryIter++){	
-		candidateStep1 = (rangeStart + currentStep)/2;
-		candidateStep2 = (rangeEnd + currentStep)/2;
+    for(int binaryIter = 0; binaryIter <= 30; binaryIter++){	
+        candidateStep1 = (rangeStart + currentStep)/2;
+        candidateStep2 = (rangeEnd + currentStep)/2;
 
-//		currentStep = (rangeStart + rangeEnd)/2;
+        //		currentStep = (rangeStart + rangeEnd)/2;
 
-                Q1 = (1 - candidateStep1)*Q + candidateStep1*Qs;
-                Q2 = (1 - candidateStep2)*Q + candidateStep2*Qs;
+        Q1 = (1 - candidateStep1)*Q + candidateStep1*Qs;
+        Q2 = (1 - candidateStep2)*Q + candidateStep2*Qs;
 
-		obj1 = getObj(Q1);
-		obj2 = getObj(Q2);
+        obj1 = getObj(Q1);
+        obj2 = getObj(Q2);
 
-       //         if(fabs(candidateStep1 - candidateStep2) < epsilon){
-       //             if(fabs(obj1 - obj2) < epsilon){
-       //                return currentStep; 
-       //             }
-       //         }
+        //         if(fabs(candidateStep1 - candidateStep2) < epsilon){
+        //             if(fabs(obj1 - obj2) < epsilon){
+        //                return currentStep; 
+        //             }
+        //         }
 
-		if(obj1 < obj2)
-			rangeEnd = currentStep;
-		else
-			rangeStart = currentStep;
-		currentStep = (rangeStart + rangeEnd)/2;
+        if(obj1 < obj2)
+            rangeEnd = currentStep;
+        else
+            rangeStart = currentStep;
+        currentStep = (rangeStart + rangeEnd)/2;
 
-	}
-        return currentStep;
+    }
+    return currentStep;
 }
 
 float doLineSearch2(const MatrixXf & Qs, const MatrixXf & Q, int iter, float prevStep, std::string output_path){
 
-	//do binary search for line search
-	float rangeStart = 0;
-//	float rangeEnd = prevStep; 
-	float rangeEnd = 1; 
-        float middle = 0;
-        float deriv = 0;
-        float epsilon = 0.001;
+    //do binary search for line search
+    float rangeStart = 0;
+    //	float rangeEnd = prevStep; 
+    float rangeEnd = 1; 
+    float middle = 0;
+    float deriv = 0;
+    float epsilon = 0.001;
 
-        std::string log_output = output_path;
-        log_output.replace(log_output.end()-4, log_output.end(),"_obj.txt");
-        std::ofstream logFile;
-        logFile.open(log_output);
+    std::string log_output = output_path;
+    log_output.replace(log_output.end()-4, log_output.end(),"_obj.txt");
+    std::ofstream logFile;
+    logFile.open(log_output);
 
-        for(float stepVal = 0; stepVal <= 1; stepVal = stepVal + 0.01){
-            MatrixXf temp = Q + stepVal*(Qs - Q);
-            logFile << stepVal << " " << getObj(temp) << " " << getDeriv(Qs, Q, stepVal) << std::endl;
+    for(float stepVal = 0; stepVal <= 1; stepVal = stepVal + 0.01){
+        MatrixXf temp = Q + stepVal*(Qs - Q);
+        logFile << stepVal << " " << getObj(temp) << " " << getDeriv(Qs, Q, stepVal) << std::endl;
+    }
+
+    logFile.close();
+
+    for(int binaryIter = 0; binaryIter <= 10; binaryIter++){	
+        middle = (rangeStart + rangeEnd)/2;
+        deriv = getDeriv(Qs, Q, middle); 
+
+        if(deriv > 0)
+            rangeEnd = middle;
+        else if(deriv < 0)
+            rangeStart = middle;
+        else{
+            std::cout << "Deriv = " << deriv << std::endl;
+            return middle;
         }
-
-        logFile.close();
-
-	for(int binaryIter = 0; binaryIter <= 10; binaryIter++){	
-                middle = (rangeStart + rangeEnd)/2;
-                deriv = getDeriv(Qs, Q, middle); 
-
-               if(deriv > 0)
-                    rangeEnd = middle;
-                else if(deriv < 0)
-                    rangeStart = middle;
-                else{
-                    std::cout << "Deriv = " << deriv << std::endl;
-                    return middle;
-                }
-	}
-        std::cout << "Deriv = " << deriv << std::endl;
-        return middle;
+    }
+    std::cout << "Deriv = " << deriv << std::endl;
+    return middle;
 }
 float getObj(const MatrixXf & Q){
 
-	float logSum = 0, expSum = 0, minMarginal = 0;
+    float logSum = 0, expSum = 0, minMarginal = 0;
 
-	for(int i = 0; i < Q.cols(); i++){
-            expSum = 0;
-            VectorXf b = Q.col(i);
-            minMarginal = b.minCoeff();
-            b.array() -= minMarginal; 
-            b = (-b.array()).exp(); 
-            expSum = b.sum();
-            logSum = logSum + log(expSum) - minMarginal;
-        }	
-
-	return logSum;
+    for(int i = 0; i < Q.cols(); i++){
+        expSum = 0;
+        VectorXf b = Q.col(i);
+        minMarginal = b.minCoeff();
+        b.array() -= minMarginal; 
+        b = (-b.array()).exp(); 
+        expSum = b.sum();
+        logSum = logSum + log(expSum) - minMarginal;
+    }	
+    return logSum;
 }
 
 float getDeriv(const MatrixXf & Qs, const MatrixXf & Q, float step){
 
-        float deriv = 0; 
-	for(int i = 0; i < Q.cols(); i++){
-            VectorXf a = Q.col(i);
-            a = (-a.array()).exp();
-            VectorXf b = Qs.col(i) - Q.col(i);
-            VectorXf c = (-b.array()*step).exp();
-            VectorXf temp1 = -a.array()*b.array()*c.array();
-            VectorXf temp2 = a.array()*c.array();
-            if(fabs(temp2.sum()) < 0.5)
-                std::cout << "temp1.sum() = " << temp1.sum() << "  temp2.sum() = " << temp2.sum() << std::endl;
-//            std::cout << "temp1.sum() = " << temp1.sum() << "  temp2.sum() = " << temp2.sum() << std::endl;
-            deriv = deriv + temp1.sum()/temp2.sum();  
-        }
-       return deriv; 
+    float deriv = 0; 
+    for(int i = 0; i < Q.cols(); i++){
+        VectorXf a = Q.col(i);
+        a = (-a.array()).exp();
+        VectorXf b = Qs.col(i) - Q.col(i);
+        VectorXf c = (-b.array()*step).exp();
+        VectorXf temp1 = -a.array()*b.array()*c.array();
+        VectorXf temp2 = a.array()*c.array();
+        if(fabs(temp2.sum()) < 0.5)
+            std::cout << "temp1.sum() = " << temp1.sum() << "  temp2.sum() = " << temp2.sum() << std::endl;
+        //            std::cout << "temp1.sum() = " << temp1.sum() << "  temp2.sum() = " << temp2.sum() << std::endl;
+        deriv = deriv + temp1.sum()/temp2.sum();  
+    }
+    return deriv; 
 } 
 
 void getNegGradient(MatrixXf & negGrad, const MatrixXf & Q){
 
-	int M_ = Q.rows();
-	int N_ = Q.cols(); 
-	float gradSum = 0;
-	for(int i = 0; i < N_; i++){
-		gradSum = 0;
-		VectorXf b = Q.col(i);
-		float minMarginal = b.minCoeff();
-		b.array() -= minMarginal;
-		b = (-b.array()).exp();
-		gradSum = b.sum();
-		b = b/gradSum;
-		negGrad.col(i) = b;
-	}
+//    int M_ = Q.rows();
+    int N_ = Q.cols(); 
+    float gradSum = 0;
+    for(int i = 0; i < N_; i++){
+        gradSum = 0;
+        VectorXf b = Q.col(i);
+        float minMarginal = b.minCoeff();
+        b.array() -= minMarginal;
+        b = (-b.array()).exp();
+        gradSum = b.sum();
+        b = b/gradSum;
+        negGrad.col(i) = b;
+    }
 }
 
 
@@ -601,99 +600,270 @@ void getNegGradient(MatrixXf & negGrad, const MatrixXf & Q){
 /////  tree-utils /////
 /////////////////////////////
 
-    void getLeafNodes(node parent, std::vector<int> &leaf_vec)
-    {
-        using namespace std;
-       if(parent.children.size() == 0){
-          leaf_vec.push_back(parent.id);
-          return;
-       }
-       else{
-           for(int i = 0; i < parent.children.size(); i++){
-                getLeafNodes(*parent.children[i], leaf_vec);
-           }
-       }
-       return;
-    }
-
-    void getTl(node s, std::vector<float> &weight_factors, node root){
+void getLeafNodes(node parent, std::vector<int> &leaf_vec)
+{
     using namespace std;
-       if(s.id == root.id){ //root assumed to have id 0
-            return;
-       }
-       node parent = *(s.parent);
-//       weight_factors.push_back(root.weight[0]/parent.weight[0]);
-       weight_factors.push_back(parent.weight[0]);
-    }
-
-    void getSubtrees(node parent, std::vector<std::vector<int>> &subleaves, std::vector<float> &weight_factors, node root){
-
-        using namespace std;
-        vector<node*> children = parent.children;
-        
-        for(int i = 0; i < children.size(); i++){
-           vector<int> leaf_vec;
-           getLeafNodes(*children[i], leaf_vec);
-           subleaves.push_back(leaf_vec);
-           getTl(*children[i], weight_factors, root);
-           getSubtrees(*children[i], subleaves, weight_factors, root);
-        } 
+    if(parent.children.size() == 0){
+        leaf_vec.push_back(parent.id);
         return;
     }
+    else{
+        for(int i = 0; i < parent.children.size(); i++){
+            getLeafNodes(*parent.children[i], leaf_vec);
+        }
+    }
+    return;
+}
 
-    node getRoot(std::vector<node> G){
+void get_node_weight(node s, std::vector<float> &node_weights, node root){
+    using namespace std;
+    if(s.id == root.id){ //root assumed to have id 0
+        return;
+    }
+    node parent = *(s.parent);
+    //       node_weights.push_back(root.weight[0]/parent.weight[0]);
+    node_weights.push_back(parent.weight[0]);
+}
+
+void getSubtrees(node parent, std::vector<std::vector<int>> &subleaves, std::vector<float> &node_weights, node root){
+
+    using namespace std;
+    vector<node*> children = parent.children;
+
+    for(int i = 0; i < children.size(); i++){
+        vector<int> leaf_vec;
+        getLeafNodes(*children[i], leaf_vec);
+        subleaves.push_back(leaf_vec);
+        get_node_weight(*children[i], node_weights, root);
+        getSubtrees(*children[i], subleaves, node_weights, root);
+    } 
+    return;
+}
+
+node getRoot(std::vector<node> G){
     for(int i = 0; i < G.size(); i++){
         if(G[i].parent == NULL)
             return G[i];
     }
-    }
-
-    void get_m(std::vector<node> G, std::vector<int> &m){
-//        using namespace std;
-//        node root = getRoot(G);
-//        int m = 0;
-//    
-//        node next_parent = root;
-//        while(true){
-//            if(next_parent.children.size() == 0)
-//                break;
-//            else
-//                next_parent = *next_parent.children[0];
-//            m += 1;
-//        }    
-//        return m;
-    }
-
-    void readTree(std::vector<std::vector<int>> &subleaves, std::vector<float> &weight_factors, std::vector<int> &m, const std::string filename){
-        using namespace std;
-
-        ifstream treefile(filename);
-        string s;
-
-        int nV;
-        getline(treefile, s);
-        istringstream ss(s);
-        ss >> nV;
-        
-        vector<node> G(nV);
-        for(int i = 0; i < G.size(); i++)
-            G[i].id = i;
-
-        int parent_id, child_id;
-        float weight;
-
-        while(getline(treefile, s)){
-            istringstream ss(s);
-            ss >> parent_id;
-            ss >> weight;
-            while(ss >> child_id){
-                G[parent_id].children.push_back(&G[child_id]);
-                G[parent_id].weight.push_back(weight);
-                G[child_id].parent = &G[parent_id];
-            }
-        }
-
-        node root = getRoot(G);
-        getSubtrees(root, subleaves, weight_factors, root);
 }
 
+void readTree(std::vector<std::vector<int>> &subleaves, std::vector<float> &node_weights, const std::string filename){
+    using namespace std;
+
+    ifstream treefile(filename);
+    string s;
+
+    int nV;
+    getline(treefile, s);
+    istringstream ss(s);
+    ss >> nV;
+
+    vector<node> G(nV);
+    for(int i = 0; i < G.size(); i++)
+        G[i].id = i;
+
+
+    int parent_id, child_id;
+    float weight;
+
+    while(getline(treefile, s)){
+        istringstream ss(s);
+        ss >> parent_id;
+        ss >> weight;
+        while(ss >> child_id){
+            G[parent_id].children.push_back(&G[child_id]);
+            G[parent_id].weight.push_back(weight);
+            G[child_id].parent = &G[parent_id];
+        }
+    }
+
+    node root = getRoot(G);
+    getSubtrees(root, subleaves, node_weights, root);
+}
+
+void getPath(node t, const std::vector<node> &G, std::vector<node> &path_nodes){
+    //given the tree G, and the leaf node t, get the list of nodes on the path from root to t
+//    std::cout << "leaf nodes" << std::endl;
+    node parent_node = t;
+    while(parent_node.parent != NULL){
+        path_nodes.push_back(parent_node);
+ //       std::cout << parent_node.id << " ";
+        parent_node = *parent_node.parent; 
+    }
+  //  std::cout << std::endl; 
+}
+//void getNegGradient_rhst(MatrixXd & negGrad, const MatrixXd & Q, std::vector<node> G){ 
+//    using namespace std; 
+//    //Q & negGrad of dimension M X N 
+//
+//    int M = Q.rows(); //no of labels + meta-labels
+//    int N = Q.cols();  
+//
+//    node root = getRoot(G);
+//    
+//    vector<int> leaf_vec;
+//    getLeafNodes(root, leaf_vec);
+//
+//    //get s^prime (Q_L) matrix (L X N)
+//    int L = leaf_vec.size();
+//    MatrixXd Q_L = MatrixXd::Zero(L, N);
+//
+////    std::cout <<"Leaf node in order" << std::endl; 
+//  //  for(int i = 0; i < leaf_vec.size(); i++)
+// //       std::cout << leaf_vec[i] << " ";
+//
+//    for(int i = 0; i < L; i++){
+//        vector<node> path_nodes; //stores list of nodes in path to a leaf
+//        getPath(G[leaf_vec[i]], G, path_nodes);             
+//        for(int j = 0; j < path_nodes.size(); j++)
+//            Q_L.row(i) += Q.row(path_nodes[j].id);
+//    }  
+//
+//    mMat = (-Q_L).array().exp(); 
+//   for(int i = 0; i < M; i++){
+//        vector<node> leaf_nodes; //stores list of nodes in path to a leaf
+//        getLeafNodes(parent, leaf_nodes)
+//   } 
+////     Q_L.col(0) = ArrayXd::LinSpaced(G.size() - 1, 1, G.size() - 1); std::cout << "row = " << Q_L.rows() << "      cols = " << Q_L.cols() << std::endl; 
+////    std::cout << Q_L << std::endl; 
+//  //j  //get m matrix (L X N)
+//  //j  
+//  //j  float gradSum = 0;
+//  //j  for(int i = 0; i < N; i++){
+//  //j      gradSum = 0;
+//  //j      VectorXf b = Q.col(i);
+//  //j      float minMarginal = b.minCoeff();
+//  //j      b.array() -= minMarginal;
+//  //j      b = (-b.array()).exp();
+//  //j      gradSum = b.sum();
+//  //j      b = b/gradSum;
+//  //j      negGrad.col(i) = b;
+//  //j  }
+//}
+
+void getMarginals_rhst(MatrixXf & out, const MatrixXf & in, const std::string filename){
+
+    using namespace std;
+    ifstream treefile(filename);
+    string s;
+
+    getline(treefile, s);
+    istringstream ss(s);
+
+    int N = in.cols();
+    int M, L;
+    ss >> M >> L;
+
+    //in to in_L
+    //for each leaf node in in_L, sum up rows of in corresponding to path nodes of that leaf
+    MatrixXf in_leaf = MatrixXf::Zero(L, N); 
+    int leaf, temp;
+    for(int i = 0; i < L; i++){
+        getline(treefile, s);
+        istringstream ss(s);
+        ss >> leaf;
+        while(ss >> temp){
+            in_leaf.row(leaf) += in.row(temp);
+        }   
+    }
+
+    //in_leaf to m
+    //just take neg exp
+    MatrixXf mMat = (-in_leaf).array().exp(); 
+   out.resize(L, N); 
+    for(int i = 0; i < out.cols(); i++){
+        out.col(i) = mMat.col(i)/mMat.col(i).sum();
+    }
+} 
+
+float getObj_rhst(const MatrixXf & Q, const std::string filename){
+
+    //the part till getting mMat is same as for getting -ve grad
+    using namespace std;
+    ifstream treefile(filename);
+    string s;
+
+    getline(treefile, s);
+    istringstream ss(s);
+
+    int N = Q.cols();
+    int M, L;
+    ss >> M >> L;
+
+    //Q to Q_L
+    //for each leaf node in Q_L, sum up rows of Q corresponding to path nodes of that leaf
+    MatrixXf Q_L = MatrixXf::Zero(L, N); 
+    int leaf, temp;
+    for(int i = 0; i < L; i++){
+        getline(treefile, s);
+        istringstream ss(s);
+        ss >> leaf;
+        while(ss >> temp){
+            Q_L.row(leaf) += Q.row(temp);
+        }   
+    }
+    //Q_L to m
+    //just take neg exp
+    MatrixXf mMat = (-Q_L).array().exp(); 
+    float logSum = 0, mSum = 0;
+
+    for(int i = 0; i < Q.cols(); i++){
+        mSum = 0;
+        VectorXf b = mMat.col(i);
+        mSum = b.sum();
+        logSum = logSum + log(mSum);
+    }	
+    return logSum;
+
+}
+
+void getNegGradient_rhst(MatrixXf & negGrad, const MatrixXf & Q, const std::string filename){
+
+    using namespace std;
+    ifstream treefile(filename);
+    string s;
+
+    getline(treefile, s);
+    istringstream ss(s);
+
+    int N = Q.cols();
+    int M, L;
+    ss >> M >> L;
+
+    //Q to Q_L
+    //for each leaf node in Q_L, sum up rows of Q corresponding to path nodes of that leaf
+    MatrixXf Q_L = MatrixXf::Zero(L, N); 
+    int leaf, temp;
+    for(int i = 0; i < L; i++){
+        getline(treefile, s);
+        istringstream ss(s);
+        ss >> leaf;
+        while(ss >> temp){
+            Q_L.row(leaf) += Q.row(temp);
+        }   
+    }
+
+    //Q_L to m
+    //just take neg exp
+    MatrixXf mMat = (-Q_L).array().exp(); 
+
+    //m to negGrad
+    //for each label or meta-label in negGrad, (sum of child labels of this node)/total sum
+     int metalabel;  // to index the row of label or metalabel in negGrad
+     for(int i = 0; i < M; i++){ // - 1 because root excluded
+        getline(treefile, s);
+        istringstream ss(s);
+        ss >> metalabel;
+        while(ss >> temp){
+            negGrad.row(metalabel) += mMat.row(temp);
+            cout << temp << " ";
+        }   
+    }
+    for(int i = 0; i < N; i++){
+        negGrad.col(i) = negGrad.col(i).array()/mMat.col(i).sum();
+    }
+}
+
+void getdim(MatrixXf &A){
+    std::cout << "rows: " << A.rows() << "      cols: " << A.cols() << std::endl; 
+}
