@@ -210,17 +210,20 @@ void save_image(unsigned char * img, const img_size & size, const std::string & 
     cv::imwrite(path_to_output, imgMat);
 }
 
-void writePPM(unsigned char * char_img){
+void writePPM(unsigned char * char_img, img_size & size){
    using namespace std;
    ofstream imgFile;
    imgFile.open("img.ppm");
 
-   int height = 288;
-   int width = 384;
+//   std::cout << "Image width = " << size.width << "   height = " << size.height << std::endl; 
+   int height = size.height;
+   int width = size.width;
 
    imgFile << "P6" << endl;
-    imgFile << "384 288" << endl;
+    imgFile << size.width << " " << size.height << endl;
     imgFile << "255" << endl;
+//    for (int j=0; j < width; j++) {
+ //       for (int i=0; i < height; i++) {
     for (int j=0; j < height; j++) {
         for (int i=0; i < width; i++) {
             imgFile << char_img[(i+j*width)*3+0];
@@ -255,33 +258,43 @@ unsigned char * load_image( const std::string & path_to_image, img_size & size){
             char_img[(i+j*size.width)*3+2] = static_cast<char>(intensity.val[0]);
 	    }
     }
-//    writePPM(char_img);
+    writePPM(char_img, size);
     return char_img;
 }
 
 unsigned char * load_rescaled_image( const std::string & path_to_image, img_size & size, int imskip){
 
-    assert(imskip > 1);
-
     if (imskip < 1) imskip = 1;
 
     cv::Mat img = cv::imread(path_to_image);
+    if(size.height != img.rows || size.width != img.cols) {
+//        std::cout << "Dimension doesn't correspond to unaries" << std::endl;
+        if (size.height == -1) {
+            size.height = img.rows;
+ //           std::cout << "Adjusting height because was undefined" << '\n';
+        }
+        if (size.width == -1) {
+            size.width = img.cols;
+  //          std::cout << "Adjusting width because was undefined" << '\n';
+        }
+    }
+
+ 
     std::cout << "height = " << size.height << " " << "width = " << size.width << std::endl;
-     img_size orig_size; 
-	orig_size.height = size.height*imskip;
-	orig_size.width = size.width*imskip;
-    std::cout << "orig height = " << orig_size.height << " " << "orig width = " << orig_size.width << std::endl;
-  
-    unsigned char * char_img = new unsigned char[size.width*size.height*3]();
-    for (int j=0; j < size.height; j++) {
-            for (int i=0; i < size.width; i++) {
+ 
+    int down_width =  size.width/imskip;
+    int down_height =  size.height/imskip;
+
+    unsigned char * char_img = new unsigned char[down_width*down_height*3]();
+    for (int j=0; j < down_height; j++) {
+            for (int i=0; i < down_width; i++) {
                 cv::Vec3b intensity = img.at<cv::Vec3b>(j*imskip,i*imskip); // this comes in BGR
                 int ii = (int) i; 
                 int jj = (int) j;
-//              assert((ii+jj*size.width)*3+2 < size.width*size.height*3);
-                char_img[(ii+jj*size.width)*3+0] = intensity.val[0];
-                char_img[(ii+jj*size.width)*3+1] = intensity.val[1];
-                char_img[(ii+jj*size.width)*3+2] = intensity.val[2];
+//              assert((ii+jj*down_width)*3+2 < down_width*down_height*3);
+                char_img[(ii+jj*down_width)*3+0] = intensity.val[0];
+                char_img[(ii+jj*down_width)*3+1] = intensity.val[1];
+                char_img[(ii+jj*down_width)*3+2] = intensity.val[2];
 		}
     }
 
@@ -290,7 +303,7 @@ unsigned char * load_rescaled_image( const std::string & path_to_image, img_size
 }
 
 MatrixXf load_unary( const std::string & path_to_unary, img_size& size, int max_label) {
-
+//assuming size is already resized as per imskip
     ProbImage texton;
     texton.decompress(path_to_unary.c_str());
     texton.boostToProb();
@@ -321,7 +334,7 @@ MatrixXf load_unary( const std::string & path_to_unary, img_size& size, int max_
     return unaries;
 }
 
-MatrixXf load_unary_from_text(const std::string & path_to_unary, img_size& size) {
+MatrixXf load_unary_from_text(const std::string & path_to_unary, img_size& size, int imskip) {
 
     using namespace std;
     fstream myfile(path_to_unary.c_str(), std::ios_base::in);
@@ -352,14 +365,29 @@ MatrixXf load_unary_from_text(const std::string & path_to_unary, img_size& size)
     		unary_current_variable[unary_count] = unary;
                 unary_count = unary_count + 1;
     	}
-        if(unary_count != nlabel)
-            cout << "One or more labels not assigned unary potential" << endl;
-//            assert(("One or more labels not assigned unary potential", unary_count == nlabel));
-        unaries.col(variable_count) = unary_current_variable;
+
+        //note that unary file stored data in column-major format, but image read in row major format
+        //we are going to store unaries as row-major as well
+        int j = variable_count % size.height;
+        int i = variable_count/size.height;
+            
+        int row_major_var_count = j * size.width + i;
+        unaries.col(row_major_var_count) = unary_current_variable;
     }
  
-   cout << "Unaries read" << endl;
-   return unaries;
+
+   int down_width = (size.width/imskip);
+   int down_height = (size.height/imskip);
+
+   MatrixXf unaries_down(nlabel, down_width * down_height);
+
+    for(int i=0; i<down_height; ++i)
+       for(int j=0; j<down_width; ++j)
+		  for(int k=0; k< nlabel; ++k)
+                     unaries_down(k, i*down_width + j) = unaries(k, (i*down_width + j)*imskip);
+
+   return unaries_down;
+//   return unaries;
 }
 
 MatrixXf load_unary_rescaled( const std::string & path_to_unary, img_size& size, int imskip, int max_label) {
@@ -444,17 +472,12 @@ void save_map(const MatrixXf & estimates, const img_size & size, const std::stri
     for(int i=0; i<estimates.cols(); ++i) {
         int lbl;
         estimates.col(i).maxCoeff( &lbl);
-//	if(lbl < 0 || lbl > 22) std::cout << "lbl = " << lbl << std::endl;
         labeling[i] = lbl;
     }
 
-for(int i=0; i<estimates.cols(); ++i) {
-//    std::cout << "i = " << i << std::endl;
- //   std::cout << "labeling[i] = " << labeling[i] << std::endl;
-}	
- 
     cv::Mat img(size.height, size.width, CV_8UC3);
     cv::Vec3b intensity;
+
     if(dataset_name == "Stereo_special"){
         // Make the image
         int max_label = *std::max_element(labeling.begin(), labeling.end());
@@ -467,7 +490,6 @@ for(int i=0; i<estimates.cols(); ++i) {
             int row = (i - col)/size.width;
             img.at<cv::Vec3b>(row, col) = intensity;
         }
-    cv::transpose(img, img);
     } else {
         const unsigned char*  legend;
         if (dataset_name == "MSRC") {
@@ -480,11 +502,8 @@ for(int i=0; i<estimates.cols(); ++i) {
 
         // Make the image
        for(int i=0; i<estimates.cols(); ++i) {
-//	    std::cout << "i = " << i << std::endl;
-//	    std::cout << "labeling[i] = " << labeling[i] << std::endl;
-		
-	       int lbl = labeling[i];
-	if(lbl < 0 || lbl > 22) std::cout << "i = " << i << " lbl = " << lbl << std::endl;
+           int lbl = labeling[i];
+           if(lbl < 0 || lbl > 22) std::cout << "i = " << i << " lbl = " << lbl << std::endl;
             intensity[2] = legend[3*labeling[i]];
             intensity[1] = legend[3*labeling[i] + 1];
             intensity[0] = legend[3*labeling[i] + 2];
@@ -494,7 +513,6 @@ for(int i=0; i<estimates.cols(); ++i) {
             img.at<cv::Vec3b>(row, col) = intensity;
         }
     }
-
     cv::imwrite(path_to_output, img);
 }
 
@@ -593,10 +611,11 @@ MatrixXf load_matrix(std::string path_to_matrix){
 }
 
 
-void save_matrix(std::string path_to_output, MatrixXf matrix){
+void save_matrix(std::string path_to_output, MatrixXf matrix, const img_size & size){
     std::ofstream file(path_to_output.c_str());
     const static IOFormat CSVFormat(StreamPrecision, DontAlignCols, ", ", "\n");
-    file << matrix.rows() << "\t" << matrix.cols() << std::endl;
+//    file << matrix.rows() << "\t" << matrix.cols() << std::endl;
+    file << size.height << ", " << size.width << std::endl;
     file << matrix.format(CSVFormat);
     file.close();
 }

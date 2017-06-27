@@ -93,9 +93,10 @@ public:
   MatrixXf unary_init() const;
 
   // Run MF inference and return the probabilities
-  MatrixXf mf_inference(const MatrixXf & init, int n_iterations) const;
-  MatrixXf mf_inference(const MatrixXf & init) const;
+MatrixXf mf_inference ( const MatrixXf & init, int n_iterations , std::string output_path, std::string dataset_name) const;
+//  MatrixXf mf_inference(const MatrixXf & init) const;
 
+    MatrixXf mf_inference (const MatrixXf & init, std::string output_path, std::string dataset_name) const;
   // Run the energy minimisation on the QP
   // First one is the Lafferty-Ravikumar version of the QP
   MatrixXf qp_inference(const MatrixXf & init) const;
@@ -115,8 +116,8 @@ public:
 float computeGaussianWeight(const VectorXf & feature_a, const VectorXf & feature_b);
 void getSubmodFnVal(int j, int i, MatrixXf &unary);
 void compareWithBf(MatrixXf &pairwise_filter, MatrixXf & grad);
-MatrixXf submodular_inference(MatrixXf & init, int width, int height, std::string output_path);
-MatrixXf submodular_inference_rhst(MatrixXf & init, int width, int height, std::string output_path, std::string tree_file);
+MatrixXf submodular_inference(MatrixXf & init, int width, int height, std::string output_path, std::string dataset_name);
+MatrixXf submodular_inference_rhst(MatrixXf & init, int width, int height, std::string output_path, std::string tree_file, std::string dataset_name);
 void getConditionalGradient(MatrixXf & Qs, MatrixXf & Q);
 void getConditionalGradient_rhst(MatrixXf &Qs, MatrixXf & Q, const std::string filename, const MatrixXf &unary_meta);
 MatrixXf getFeatureMat(const unsigned char* im);

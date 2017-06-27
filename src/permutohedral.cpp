@@ -569,14 +569,16 @@ void sliceSplitArray(float *out, float alpha, float up_to, split_array *in, bool
 	float *in_f = (float *)in;
 	int coeff;
 	if (from_top) {	
-		coeff = std::max(int(floor((up_to-1e-9)*RESOLUTION)), 0);
+            coeff = std::max(int(floor((up_to-1e-9)*RESOLUTION)), 0);
 	} else {	
-		coeff = std::min(int(floor((up_to)*RESOLUTION)), RESOLUTION-1);
-	}
+            coeff = std::min(int(floor((up_to)*RESOLUTION)), RESOLUTION-1);
+       }
 	assert(coeff >= 0 && coeff < RESOLUTION);
-	*out += in_f[coeff] * alpha;
+       
+        *out += in_f[coeff] * alpha;
 }
 void Permutohedral::seqCompute_upper_minus_lower_ord (float* out, const float* in, int value_size) const {
+    
 	// Shift all values by 1 such that -1 -> 0 (used for blurring)
         split_array * values = new split_array[ (M_+2)*value_size ];
 	split_array * new_values = new split_array[ (M_+2)*value_size ];
@@ -613,20 +615,11 @@ void Permutohedral::seqCompute_upper_minus_lower_ord (float* out, const float* i
 			split_array * n2_val = values + n2*value_size;
 			for( int k=0; k<value_size; k++ ) {
 				weightedAddSplitArray(&new_val[k], &old_val[k], 0.5, &n1_val[k], &n2_val[k]);
-				// new_val[k] = old_val[k]+0.5*(n1_val[k] + n2_val[k]);
-                //printf("#%d\n", (i+1)*value_size+k);
-                //printSplitArray(&new_val[ k ]);
-//                if (i == 0 && k == 0) {
-//                printf("#%d\n", (i+1)*value_size+k);
-//                printf("new_val\n"); printSplitArray(&new_val[ k ]);
-//                printf("old_val\n"); printSplitArray(&old_val[ k ]);
-//                printf("n1_val\n"); printSplitArray(&n1_val[ k ]);
-//                printf("n2_val\n"); printSplitArray(&n2_val[ k ]);
-//                }
-			}
-		}
-		std::swap( values, new_values );
+        }
+            }
+            std::swap( values, new_values );
 	}
+
 
 	// Slicing
 	for( int i=0; i<N_; i++ ){
@@ -636,8 +629,7 @@ void Permutohedral::seqCompute_upper_minus_lower_ord (float* out, const float* i
 			int o = offset_[i*(d_+1)+j]+1;
 			float w = barycentric_[i*(d_+1)+j];
 			for( int k=0; k<value_size; k++ ) {
-				sliceSplitArray(&out[ i*value_size+k ], -w*alpha, in[ i*value_size+k ], &values[ o*value_size+k ], false);
-				//out[ i*value_size+k ] += w * values[ o*value_size+k ] * alpha;
+                                sliceSplitArray(&out[ i*value_size+k ], -w*alpha, in[ i*value_size+k ], &values[ o*value_size+k ], false);
 			}
 		}
 	}
@@ -653,9 +645,6 @@ void Permutohedral::seqCompute_upper_minus_lower_ord (float* out, const float* i
 			float w = barycentric_[i*(d_+1)+j];
 			for( int k=0; k<value_size; k++ ) {
 				addSplitArray(&values[ o*value_size+k ], w, in[ i*value_size+k ], true);
-				// values[ o*value_size+k ] += w * in[ i*value_size+k ];
-                //printf("#%d\n", o*value_size+k);
-                //printSplitArray(&values[ o*value_size+k ]);
 			}
 		}
 	}
@@ -672,9 +661,6 @@ void Permutohedral::seqCompute_upper_minus_lower_ord (float* out, const float* i
 			split_array * n2_val = values + n2*value_size;
 			for( int k=0; k<value_size; k++ ) {
 				weightedAddSplitArray(&new_val[k], &old_val[k], 0.5, &n1_val[k], &n2_val[k]);
-				// new_val[k] = old_val[k]+0.5*(n1_val[k] + n2_val[k]);
-                //printf("#%d\n", (i+1)*value_size+k);
-                //printSplitArray(&new_val[ k ]);
 			}
 		}
 		std::swap( values, new_values );
@@ -687,7 +673,6 @@ void Permutohedral::seqCompute_upper_minus_lower_ord (float* out, const float* i
 			float w = barycentric_[i*(d_+1)+j];
 			for( int k=0; k<value_size; k++ ) {
 				sliceSplitArray(&out[ i*value_size+k ], w*alpha, in[ i*value_size+k ], &values[ o*value_size+k ], true);
-				// out[ i*value_size+k ] += w * values[ o*value_size+k ] * alpha;
 			}
 		}
 	}

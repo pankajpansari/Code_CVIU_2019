@@ -3,13 +3,6 @@
 
 using namespace Eigen;
 
-struct node{
-    int id;
-    node* parent;
-    std::vector<node*> children;
-    std::vector<float> weight;
-};
-
 typedef MatrixXd MatrixP;
 typedef VectorXd VectorP;
 typedef double typeP;
@@ -89,12 +82,11 @@ void update_extended_matrix(MatrixXf & out, const MatrixXf & in, const std::vect
 bool fileExists(const std::string& filename);
 float getObj(const MatrixXf & Q);
 float getObj_rhst(const MatrixXf & Q, const std::string filename);
+float doLineSearch_rhst(const MatrixXf & Qs, const MatrixXf & Q, int iter, float prevStep, const std::string filename);
 float getDeriv(const MatrixXf & Qs, const MatrixXf & Q, float step);
 float doLineSearch(const MatrixXf & Qs, const MatrixXf & Q, int iter, float prevStep);
 float doLineSearch2(const MatrixXf & Qs, const MatrixXf & Q, int iter, float prevStep, std::string output_path);
 void getNegGradient(MatrixXf & negGrad, const MatrixXf & Q);
-void readTree(std::vector<std::vector<int>> &subleaves, std::vector<float> &subweights, const std::string tree_file);
-//void getNegGradient_rhst(MatrixXd & negGrad, const MatrixXd & Q, std::vector<node> G);
 void getNegGradient_rhst(MatrixXf & negGrad, const MatrixXf & Q, const std::string filename);
 void getdim(MatrixXf &A);
 void getMarginals_rhst(MatrixXf & out, const MatrixXf & in, const std::string filename);

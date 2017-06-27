@@ -153,7 +153,14 @@ MatrixXf DenseCRF::unary_init() const {
     return Q;
 }
 
-MatrixXf DenseCRF::mf_inference ( const MatrixXf & init, int n_iterations ) const {
+MatrixXf DenseCRF::mf_inference ( const MatrixXf & init, int n_iterations , std::string output_path, std::string dataset_name) const {
+    //log file
+    std::string log_output = output_path;
+    log_output.replace(log_output.end()-4, log_output.end(),"_log.txt");
+    std::ofstream logFile;
+    logFile.open(log_output);
+
+    float kl;
     MatrixXf Q( M_, N_ ), tmp1, unary( M_, N_ ), tmp2;
     unary.fill(0);
     if( unary_ ){
@@ -168,11 +175,20 @@ MatrixXf DenseCRF::mf_inference ( const MatrixXf & init, int n_iterations ) cons
             tmp1 -= tmp2;
         }
         expAndNormalize( Q, tmp1 );
+        kl = klDivergence(Q);
+          logFile << kl << std::endl;
     }
     return Q;
 }
 
-MatrixXf DenseCRF::mf_inference (const MatrixXf & init) const {
+MatrixXf DenseCRF::mf_inference (const MatrixXf & init, std::string output_path, std::string dataset_name) const {
+    //log file
+    std::string log_output = output_path;
+    log_output.replace(log_output.end()-4, log_output.end(),"_log.txt");
+    std::ofstream logFile;
+    logFile.open(log_output);
+
+
     MatrixXf Q( M_, N_ ), tmp1, unary( M_, N_ ), tmp2, old_Q(M_, N_);
     float old_kl, kl;
     unary.fill(0);
@@ -201,6 +217,7 @@ MatrixXf DenseCRF::mf_inference (const MatrixXf & init) const {
 
         if (compute_kl) {
             kl = klDivergence(Q);
+              logFile << kl << std::endl;
             float kl_change = old_kl - kl;
             keep_inferring = (kl_change > 0.001);
             old_kl = kl;
@@ -211,6 +228,7 @@ MatrixXf DenseCRF::mf_inference (const MatrixXf & init) const {
         old_Q = Q;
         count++;
     }
+   logFile.close();
     std::cout << "Completed mf" << std::endl; 
     return Q;
 }

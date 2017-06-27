@@ -61,14 +61,14 @@ void DenseCRF::greedyAlgorithm(MatrixXf &out, MatrixXf &grad){
     clock_t start = std::clock();
     double duration = 0;
     applyFilter(pairwise, grad);
-    pairwise = 0.5*pairwise.array();
+    pairwise = pairwise.array() * 0.5;
 
     out = unary - pairwise; //-ve because original code makes use of negative Potts potential (in labelcompatibility.cpp), but we want to use positive weights
 
 }
 
 
-MatrixXf DenseCRF::submodular_inference( MatrixXf & init, int width, int height, std::string output_path){
+MatrixXf DenseCRF::submodular_inference( MatrixXf & init, int width, int height, std::string output_path, std::string dataset_name){
 
     MatrixXf Q( M_, N_ ), Qs( M_, N_), temp(M_, N_); //Q is the current point, Qs is the conditional gradient
 
@@ -107,18 +107,9 @@ MatrixXf DenseCRF::submodular_inference( MatrixXf & init, int width, int height,
     logFile << "0 " << objVal << " " <<  duration << " " << step << std::endl;
   //  std::cout << "Iter: 0   Obj value = " << objVal << "  Step size = 0    Time = 0s" << std::endl;
 
-    for(int k = 1; k <= 1000; k++){
+    for(int k = 1; k <= 100; k++){
 
-      //for debugging purposes - getting max-marginal solutions
-
- //      std::cout << "Iter = " << k << std::endl;
-        
-    getConditionalGradient(Qs, Q);
-//    getConditionalGradient_rhst(Qs, Q);
-    
-//      dualGap = dotProduct(-negGrad, Qs - Q, dot_tmp);
-
-//      std::cout << "Dual gap = " << dualGap << std::endl;
+      getConditionalGradient(Qs, Q);
 
       step = doLineSearch(Qs, Q, k, step);
 
@@ -130,32 +121,20 @@ MatrixXf DenseCRF::submodular_inference( MatrixXf & init, int width, int height,
 
       //write to log file
       logFile << k << " " << objVal << " " <<  duration << " " << step << std::endl;
-//      std::cout << k << " " << objVal << " " <<  duration << " " << step << std::endl;
+      std::cout << "Iter: " << k << " Obj = " << objVal << " Time = " <<  duration << " Step size = " << step << std::endl;
 
-      if(k % 20 == 0){
+      if(k % 10 == 0){
             //name the segmented image and Q files
-            if(k == 10){
+                std::string img_file_extn = "_" + std::to_string(k) + ".png";
                 image_output = output_path;
                 Q_output = output_path;
-                image_output.replace(image_output.end()-4, image_output.end(),"_10.png");
-                Q_output.replace(Q_output.end()-4, Q_output.end(),"_Q_10.dat");
-            }
-            else{
-                image_output = output_path;
-                Q_output = output_path;
-                image_output.replace(image_output.end()-3, image_output.end(),"png");
-                Q_output.replace(Q_output.end()-4, Q_output.end(),"_Q.dat");
-            }
- 
-          //save segmentation
+                image_output.replace(image_output.end()-4, image_output.end(), img_file_extn);
+                
+         //save segmentation
            expAndNormalize(temp, -Q);
-           save_map(temp, size, image_output, "Stereo_special");
+           save_map(temp, size, image_output, dataset_name);
 
-            //write to console
- //           std::cout << "Iter: " << (k) << "  Obj value = " << objVal << "  Step size = " << step << " Time = " << duration << "s" << std::endl;
-            
             //write the Q values
-            write_binary(Q_output, Q);
       }
    }
 
@@ -163,6 +142,11 @@ MatrixXf DenseCRF::submodular_inference( MatrixXf & init, int width, int height,
    //convert Q to marginal probabilities
    MatrixXf marginal(M_, N_);
    expAndNormalize(marginal, -Q); 
- //  return Q;
+
+   std::string marg_file = output_path;
+   marg_file.replace(marg_file.end()-4, marg_file.end(), "_marginals.txt");
+//   write_binary(marg_file, marginal);
+   save_matrix(marg_file, marginal, size);
+ 
    return marginal;
 }

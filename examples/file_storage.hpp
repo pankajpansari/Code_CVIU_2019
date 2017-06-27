@@ -12,6 +12,11 @@ struct img_size {
     int height;
 };
 
+const unsigned char toy_legend[2*3] = {
+    128, 0, 0,
+    0, 128, 0
+};
+
 const unsigned char MSRC_legend[22*3] = {
     128,0,0,
     0,128,0,
@@ -112,7 +117,7 @@ unsigned char* load_rescaled_image(const std::string& path_to_image, img_size & 
 Matrix<short,Dynamic,1> load_labeling(const std::string & path_to_labels, const std::string & dataset_name,
                                       img_size& size);
 MatrixXf load_unary(const std::string & path_to_unary, img_size& size, int max_label=-1);
-MatrixXf load_unary_from_text(const std::string & path_to_unary, img_size& size);
+MatrixXf load_unary_from_text(const std::string & path_to_unary, img_size& size, int imskip);
 MatrixXf load_unary_rescaled(const std::string & path_to_unary, img_size& size, int imskip, int max_label = -1);
 void save_map(const MatrixXf & estimates, const img_size &  size,
               const std::string & path_to_output, const std::string & dataset_name);
@@ -126,7 +131,7 @@ label_matrix get_label_matrix(const MatrixXf & estimates, const img_size & size)
 
 void save_image(unsigned char * img, const img_size & size, const std::string & path_to_output);
 MatrixXf load_matrix(std::string path_to_matrix);
-void save_matrix(std::string path_to_output, MatrixXf matrix);
+void save_matrix(std::string path_to_output, MatrixXf matrix, const img_size & size);
 namespace Eigen{
 void write_binary(std::string file_output, const MatrixXf& matrix);
 }

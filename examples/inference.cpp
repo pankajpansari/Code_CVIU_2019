@@ -11,37 +11,53 @@ void image_inference(std::string image_file, std::string unary_file, std::string
             float bil_spcstd, float bil_colstd, float bil_potts, LP_inf_params & lp_params)
 {
     img_size size = {-1, -1};
-    MatrixXf unaries;    
-//    int imskip = 60;
- if(dataset_name == "MSRC"){
-   unaries = load_unary(unary_file, size);
- //   MatrixXf unaries = load_unary_rescaled(unary_file, size, imskip);
- }else if (dataset_name == "Stereo_special"){
-   unaries = load_unary_from_text(unary_file, size);
-   unaries = unaries.array()/unaries.maxCoeff();
 
- }
+       MatrixXf unaries;    
+       unsigned char * img;
+      
+    /*if rescaling*/
+    int imskip = 1;
+    img = load_rescaled_image(image_file, size, imskip);
+    std::cout << "Image loaded" << std::endl;
+      if(dataset_name == "MSRC"){
+            unaries = load_unary_rescaled(unary_file, size, imskip);
+        }else if (dataset_name == "Stereo_special"){
+          unaries = load_unary_from_text(unary_file, size, imskip);
+    }
+       
+    size.height = size.height/imskip;
+    size.width = size.width/imskip;
+
+    getdim(unaries);
+    /*if not rescaling
+     img = load_image(image_file, size);
+     std::cout << "Image loaded" << std::endl;
+
+
+     if(dataset_name == "MSRC"){
+       unaries = load_unary(unary_file, size);
+     }else if (dataset_name == "Stereo_special"){
+       unaries = load_unary_from_text(unary_file, size, 1);
+     }*/
+    
     std::cout << "Unaries max = " << unaries.maxCoeff() << "    min = " << unaries.minCoeff() << std::endl;
     std::cout << "Unaries size = " << unaries.rows() << "x" << unaries.cols() << std::endl; 
     std::cout << "Unaries loaded" << std::endl;
-//    unsigned char * img = load_rescaled_image(image_file, size, imskip);
-   unsigned char * img = load_image(image_file, size);
-    std::cout << "Image loaded" << std::endl;
 
-
-    if (dataset_name == "Stereo_special"){
-        //only if reading from config files
-        int tempVal = size.width; 
-        size.width = size.height;
-        size.height = tempVal;
-    }
-
-    std::cout << "height = " << size.height << " width = " << size.width << std::endl; 
     // create densecrf object
 //    std::string tree_filename = "/home/pankaj/SubmodularInference/data/input/tests/trees/tree_5_2.txt";
-//    std::string tree_filename = "/home/pankaj/SubmodularInference/data/input/tests/trees/tree_semantic_new_2.txt";
-//    std::string tree_filename = "/home/pankaj/SubmodularInference/data/input/tests/trees/tree_semantic_potts_2.txt";
-    std::string tree_filename = "/home/pankaj/SubmodularInference/data/input/tests/trees/tree_stereo_potts_2.txt";
+    std::string tree_filename = "";
+    if (dataset_name == "MSRC"){
+        tree_filename = "/home/pankaj/SubmodularInference/data/input/tests/trees/tree_semantic_potts_2.txt";
+   } else if (dataset_name == "Stereo_special"){
+//        tree_filename = "/home/pankaj/SubmodularInference/data/input/tests/trees/tree_tsukuba_potts_2_augmented_augmented.txt";
+//        tree_filename = "/home/pankaj/SubmodularInference/data/input/tests/trees/tree_tsukuba_potts_2_augmented.txt";
+    //     tree_filename = "/home/pankaj/SubmodularInference/data/input/tests/trees/test/tsukuba_l1.txt";
+         tree_filename = "/home/pankaj/SubmodularInference/data/input/tests/trees/test/tsukuba_l1_M2/tree_full.txt";
+//        tree_filename = "/home/pankaj/SubmodularInference/data/input/tests/trees/tree_teddy_potts_2.txt";
+   }
+
+
     std::ifstream treefile(tree_filename);
     std::string s;
 
@@ -65,7 +81,8 @@ void image_inference(std::string image_file, std::string unary_file, std::string
     std::string image_name = image_file.substr(found+1);
     found = image_name.find_last_of(".");
     image_name = image_name.substr(0, found);
-    std::string path_to_subexp_results = results_path + "/" + method + "_" + std::to_string(spc_std) + "_" + std::to_string(spc_potts) + "_" + std::to_string(bil_spcstd) + "_" + std::to_string(bil_colstd) + "_" + std::to_string(bil_potts) + "/";
+    image_name = image_name + "_" + std::to_string(spc_std) + "_" + std::to_string(spc_potts) + "_" + std::to_string(bil_spcstd) + "_" + std::to_string(bil_colstd) + "_" + std::to_string(bil_potts);
+    std::string path_to_subexp_results = results_path + "/" + dataset_name + "_" + method + "_" + std::to_string(spc_std) + "_" + std::to_string(spc_potts) + "_" + std::to_string(bil_spcstd) + "_" + std::to_string(bil_colstd) + "_" + std::to_string(bil_potts) + "/";
     std::string output_path = get_output_path(path_to_subexp_results, image_name);
     make_dir(path_to_subexp_results);
 
@@ -76,21 +93,22 @@ void image_inference(std::string image_file, std::string unary_file, std::string
     start = std::chrono::high_resolution_clock::now();
 
 
-//    double initial_discretized_energy = crf.assignment_energy_true(crf.currentMap(Q));
-//   std::cout << "Initial energy = " << initial_discretized_energy << std::endl;
- 
     Q = crf.unary_init();
     if (method == "mf5") {
         std::cout << "Starting mf inference " << std::endl;
-        Q = crf.mf_inference(Q, 5);
+        Q = crf.mf_inference(Q, 5, output_path, dataset_name);
     } else if (method == "mf") {
         std::cout << "Starting mf inference " << std::endl;
-        Q = crf.mf_inference(Q);
+        Q = crf.mf_inference(Q, output_path, dataset_name);
     } else if (method == "submod") {
         std::cout << "Starting submod inference " << std::endl;
         Q = unaries;
-        Q = crf.submodular_inference_rhst(Q, size.width, size.height, output_path, tree_filename);
-//        Q = crf.submodular_inference(Q, size.width, size.height, output_path);
+        Q = crf.submodular_inference(Q, size.width, size.height, output_path, dataset_name);
+    } else if (method == "submod_rhst") {
+        std::cout << "Starting submod tree inference " << std::endl;
+        Q = unaries;
+        Q = crf.submodular_inference_rhst(Q, size.width, size.height, output_path, tree_filename,  dataset_name);
+ 
     } else if (method == "lrqp") {
         Q = crf.qp_inference(Q);
     } else if (method == "qpcccp") {
@@ -189,19 +207,7 @@ void image_inference(std::string image_file, std::string unary_file, std::string
      
     end = std::chrono::high_resolution_clock::now();
     timing = std::chrono::duration_cast<std::chrono::duration<double>>(end-start).count();
-//    std::cout << "Final Q = " << Q << std::endl;
- //   std::cout << "Q dim= " << Q.rows() << " " << Q.cols() << std::endl;
-//    double final_energy = crf.compute_energy_true(Q);
-//    double discretized_energy = crf.assignment_energy_true(crf.currentMap(Q));
-    getdim(Q);
-    save_map(Q, size, output_path, dataset_name);
-//    if (!pixel_ids.empty()) save_less_confident_pixels(Q, pixel_ids, size, output_path, dataset_name);
-//    std::string txt_output = output_path;
-//    txt_output.replace(txt_output.end()-3, txt_output.end(),"txt");
-//    std::ofstream txt_file(txt_output);
-//    txt_file << timing << '\t' << final_energy << '\t' << discretized_energy << std::endl;
-//    std::cout << "#" << method << ": " << timing << '\t' << final_energy << '\t' << discretized_energy << std::endl;
-//    txt_file.close();
+   save_map(Q, size, output_path, dataset_name);
 }
 
 int main(int argc, char* argv[]) 
