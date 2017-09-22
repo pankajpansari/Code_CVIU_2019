@@ -72,6 +72,10 @@ void SparseCRF::readUnary(std::string file, int rows, int cols) {
 Eigen::MatrixXf SparseCRF::getUnary() {
     return unary_;
 }
+
+void SparseCRF::setUnary(Eigen::MatrixXf unary) {
+    unary_ = unary;
+}
 /////////////////////////////////
 /////  Pairwise Potentials  /////
 /////////////////////////////////
@@ -151,10 +155,7 @@ void SparseCRF::getConditionalGradient(MatrixXf &Qs, MatrixXf & Q, int grid_size
     //current solution is the input matrix (in)
     //conditional gradient is output
 
-        int M = Q.rows();
-        int N = Q.cols();
-
-	MatrixXf negGrad( M, N );
+	MatrixXf negGrad( M_, N_ );
 	getNegGradient(negGrad, Q); //negative gradient
 
         Qs.fill(0);
@@ -176,7 +177,7 @@ void SparseCRF::submodularFrankWolfe(MatrixXf & init, int grid_size){
     logFile.open("/home/pankaj/SubmodularInference/data/working/07_09_2017/log.txt");
 
 
-    float step = 0.001;
+    float step = 0;
     
     float objVal = 0;
 

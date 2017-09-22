@@ -386,6 +386,26 @@ MatrixXf load_unary( const std::string & path_to_unary, img_size& size, int max_
     return unaries;
 }
 
+void load_unary_synthetic(const std::string file_path, int nvar, int nlabel, MatrixXf &unaries){
+
+    using namespace std;
+    assert(unaries.rows() == nlabel); 
+    assert(unaries.cols() == nvar); 
+
+    fstream myfile(file_path.c_str(), std::ios_base::in);
+    for(int j = 0; j < nvar; j++){
+    	string line;
+    	getline(myfile, line);
+    	istringstream iss(line);
+    	double unary;
+        int i = 0;
+    	while(iss >> unary){
+                unaries(i, j) = unary;
+                i = i + 1;
+    	}
+    }
+}
+
 MatrixXf load_unary_from_text(const std::string & path_to_unary, img_size& size, int imskip) {
 
     using namespace std;

@@ -119,6 +119,7 @@ Matrix<short,Dynamic,1> load_labeling(const std::string & path_to_labels, const 
 MatrixXf load_unary(const std::string & path_to_unary, img_size& size, int max_label=-1);
 MatrixXf load_unary_from_text(const std::string & path_to_unary, img_size& size, int imskip);
 MatrixXf load_unary_rescaled(const std::string & path_to_unary, img_size& size, int imskip, int max_label = -1);
+void load_unary_synthetic(const std::string file_path, int nvar, int nlabel, MatrixXf &unaries);
 void save_map(const MatrixXf & estimates, const img_size &  size,
               const std::string & path_to_output, const std::string & dataset_name);
 unsigned char *load_grayscale_image(const std::string & path_to_image, img_size & size, int imskip = 1);

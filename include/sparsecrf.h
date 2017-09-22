@@ -18,6 +18,7 @@ public:
     SparseCRF(int W, int H, int M);
  
     void readUnary(std::string file, int rows, int cols);
+    void setUnary(Eigen::MatrixXf unary);
     
     void setPottsWeight(float weight);
 
