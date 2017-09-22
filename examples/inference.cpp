@@ -5,26 +5,40 @@
 #include <vector>
 #include "densecrf.h"
 #include "file_storage.hpp"
-
+#undef NDEBUG
+#include <assert.h>
+const int USE_TREES = 0;
+   
 void image_inference(std::string image_file, std::string unary_file, std::string dataset_name, 
             std::string method, std::string results_path, float spc_std, float spc_potts, 
             float bil_spcstd, float bil_colstd, float bil_potts, LP_inf_params & lp_params)
 {
-    img_size size = {-1, -1};
+   img_size size = {-1, -1};
 
-       MatrixXf unaries;    
-       unsigned char * img;
+    MatrixXf unaries;    
+    unsigned char * img;
       
     /*if rescaling*/
     int imskip = 1;
-    img = load_rescaled_image(image_file, size, imskip);
+    if(dataset_name == "Denoising")
+        img = load_grayscale_image(image_file, size, imskip);
+    else
+        img = load_rescaled_image(image_file, size, imskip);
+
     std::cout << "Image loaded" << std::endl;
       if(dataset_name == "MSRC"){
             unaries = load_unary_rescaled(unary_file, size, imskip);
         }else if (dataset_name == "Stereo_special"){
           unaries = load_unary_from_text(unary_file, size, imskip);
+        } else if (dataset_name == "Denoising"){
+          unaries = load_unary_from_text(unary_file, size, imskip);
     }
-       
+     
+    std::ofstream unaryFile;
+    unaryFile.open("/home/pankaj/SubmodularInference/data/working/08_09_2017/image_unary.txt");
+    unaryFile << unaries << std::endl;
+    unaryFile.close();
+
     size.height = size.height/imskip;
     size.width = size.width/imskip;
 
@@ -44,19 +58,13 @@ void image_inference(std::string image_file, std::string unary_file, std::string
     std::cout << "Unaries size = " << unaries.rows() << "x" << unaries.cols() << std::endl; 
     std::cout << "Unaries loaded" << std::endl;
 
+
     // create densecrf object
 //    std::string tree_filename = "/home/pankaj/SubmodularInference/data/input/tests/trees/tree_5_2.txt";
+    int nMeta = 0, nLabel = 0;
     std::string tree_filename = "";
-    if (dataset_name == "MSRC"){
-        tree_filename = "/home/pankaj/SubmodularInference/data/input/tests/trees/tree_semantic_potts_2.txt";
-   } else if (dataset_name == "Stereo_special"){
-//        tree_filename = "/home/pankaj/SubmodularInference/data/input/tests/trees/tree_tsukuba_potts_2_augmented_augmented.txt";
-//        tree_filename = "/home/pankaj/SubmodularInference/data/input/tests/trees/tree_tsukuba_potts_2_augmented.txt";
-    //     tree_filename = "/home/pankaj/SubmodularInference/data/input/tests/trees/test/tsukuba_l1.txt";
-         tree_filename = "/home/pankaj/SubmodularInference/data/input/tests/trees/test/tsukuba_l1_M2/tree_full.txt";
-//        tree_filename = "/home/pankaj/SubmodularInference/data/input/tests/trees/tree_teddy_potts_2.txt";
-   }
 
+    if(USE_TREES == 1){
 
     std::ifstream treefile(tree_filename);
     std::string s;
@@ -64,8 +72,12 @@ void image_inference(std::string image_file, std::string unary_file, std::string
     std::getline(treefile, s);
     std::istringstream ss(s);
 
-    int nMeta, nLabel;
     ss >> nMeta >> nLabel;
+
+    } else{
+        nLabel = unaries.rows();
+        nMeta = nLabel;
+    }
 
     DenseCRF2D crf(size.width, size.height, nMeta);
     crf.setUnaryEnergy(unaries);
@@ -97,18 +109,19 @@ void image_inference(std::string image_file, std::string unary_file, std::string
     if (method == "mf5") {
         std::cout << "Starting mf inference " << std::endl;
         Q = crf.mf_inference(Q, 5, output_path, dataset_name);
+
     } else if (method == "mf") {
         std::cout << "Starting mf inference " << std::endl;
         Q = crf.mf_inference(Q, output_path, dataset_name);
     } else if (method == "submod") {
-        std::cout << "Starting submod inference " << std::endl;
+        std::cout << "Starting submodular inference (without trees)" << std::endl;
         Q = unaries;
-        Q = crf.submodular_inference(Q, size.width, size.height, output_path, dataset_name);
+        Q = crf.submodular_inference_dense(Q, size.width, size.height, output_path, dataset_name);
     } else if (method == "submod_rhst") {
-        std::cout << "Starting submod tree inference " << std::endl;
-        Q = unaries;
-        Q = crf.submodular_inference_rhst(Q, size.width, size.height, output_path, tree_filename,  dataset_name);
- 
+        assert(USE_TREES == 1 && "Cannot run tree algorithm. USE_TREES constant should be set to 1 \n");
+         std::cout << "Starting submodular tree inference" << std::endl;
+         Q = unaries;
+         Q = crf.submodular_inference_rhst(Q, size.width, size.height, output_path, tree_filename,  dataset_name);
     } else if (method == "lrqp") {
         Q = crf.qp_inference(Q);
     } else if (method == "qpcccp") {
@@ -204,10 +217,25 @@ void image_inference(std::string image_file, std::string unary_file, std::string
         std::cout << "Unrecognised method: " << method << ", exiting..." << std::endl;
         return;
     }
+
+//    std::string marg_file = output_path;
+//    marg_file.replace(marg_file.end()-4, marg_file.end(), "_marginals.txt");
+//    save_matrix(marg_file, Q, size);
      
     end = std::chrono::high_resolution_clock::now();
     timing = std::chrono::duration_cast<std::chrono::duration<double>>(end-start).count();
-   save_map(Q, size, output_path, dataset_name);
+    save_map(Q, size, output_path, dataset_name);
+    
+    //calculate energy and print and save
+    double discretized_energy = crf.assignment_energy_true(crf.currentMap(Q));
+
+    std::string txt_output = output_path;
+    txt_output.replace(txt_output.end()-3, txt_output.end(),"txt");
+    std::ofstream txt_file(txt_output);
+    txt_file << timing << '\t' << discretized_energy << std::endl;
+    std::cout << "#" << method << ": " << timing << '\t' << discretized_energy << std::endl;
+    txt_file.close();
+
 }
 
 int main(int argc, char* argv[]) 
@@ -244,7 +272,6 @@ int main(int argc, char* argv[])
     float bil_spcstd = 31.232626;
     float bil_colstd = 7.949970;
     float bil_potts = 1.699011;
-
 
     if (argc < 11) { 
         if (dataset_name == "Pascal2010") {
@@ -295,4 +322,3 @@ int main(int argc, char* argv[])
 
     return 0;
 }
-

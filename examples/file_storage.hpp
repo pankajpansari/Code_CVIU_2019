@@ -121,6 +121,7 @@ MatrixXf load_unary_from_text(const std::string & path_to_unary, img_size& size,
 MatrixXf load_unary_rescaled(const std::string & path_to_unary, img_size& size, int imskip, int max_label = -1);
 void save_map(const MatrixXf & estimates, const img_size &  size,
               const std::string & path_to_output, const std::string & dataset_name);
+unsigned char *load_grayscale_image(const std::string & path_to_image, img_size & size, int imskip = 1);
 
 void save_less_confident_pixels(const MatrixXf & estimates, const std::vector<int> & pI, const img_size &  size,
               const std::string & path_to_output, const std::string & dataset_name);

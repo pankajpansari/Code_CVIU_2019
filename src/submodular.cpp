@@ -68,7 +68,7 @@ void DenseCRF::greedyAlgorithm(MatrixXf &out, MatrixXf &grad){
 }
 
 
-MatrixXf DenseCRF::submodular_inference( MatrixXf & init, int width, int height, std::string output_path, std::string dataset_name){
+MatrixXf DenseCRF::submodular_inference_dense( MatrixXf & init, int width, int height, std::string output_path, std::string dataset_name){
 
     MatrixXf Q( M_, N_ ), Qs( M_, N_), temp(M_, N_); //Q is the current point, Qs is the conditional gradient
 
@@ -78,7 +78,7 @@ MatrixXf DenseCRF::submodular_inference( MatrixXf & init, int width, int height,
     MatrixXf Qs_bf = MatrixXf::Zero(M_, N_);
     MatrixXf negGrad = MatrixXf::Zero( M_, N_ );
 
-   Q = init;	//initialize to unaries
+    Q = init;	//initialize to unaries
 
     float step = 0.001;
     img_size size;
@@ -107,7 +107,7 @@ MatrixXf DenseCRF::submodular_inference( MatrixXf & init, int width, int height,
     logFile << "0 " << objVal << " " <<  duration << " " << step << std::endl;
   //  std::cout << "Iter: 0   Obj value = " << objVal << "  Step size = 0    Time = 0s" << std::endl;
 
-    for(int k = 1; k <= 100; k++){
+    for(int k = 1; k <= 500; k++){
 
       getConditionalGradient(Qs, Q);
 
@@ -123,18 +123,18 @@ MatrixXf DenseCRF::submodular_inference( MatrixXf & init, int width, int height,
       logFile << k << " " << objVal << " " <<  duration << " " << step << std::endl;
       std::cout << "Iter: " << k << " Obj = " << objVal << " Time = " <<  duration << " Step size = " << step << std::endl;
 
-      if(k % 10 == 0){
+      
+      if(k % 50 == 0){
             //name the segmented image and Q files
                 std::string img_file_extn = "_" + std::to_string(k) + ".png";
                 image_output = output_path;
                 Q_output = output_path;
                 image_output.replace(image_output.end()-4, image_output.end(), img_file_extn);
                 
-         //save segmentation
-           expAndNormalize(temp, -Q);
-           save_map(temp, size, image_output, dataset_name);
+             //save segmentation
+               expAndNormalize(temp, -Q);
+               save_map(temp, size, image_output, dataset_name);
 
-            //write the Q values
       }
    }
 
@@ -143,10 +143,5 @@ MatrixXf DenseCRF::submodular_inference( MatrixXf & init, int width, int height,
    MatrixXf marginal(M_, N_);
    expAndNormalize(marginal, -Q); 
 
-   std::string marg_file = output_path;
-   marg_file.replace(marg_file.end()-4, marg_file.end(), "_marginals.txt");
-//   write_binary(marg_file, marginal);
-   save_matrix(marg_file, marginal, size);
- 
    return marginal;
 }

@@ -155,12 +155,13 @@ MatrixXf DenseCRF::unary_init() const {
 
 MatrixXf DenseCRF::mf_inference ( const MatrixXf & init, int n_iterations , std::string output_path, std::string dataset_name) const {
     //log file
-    std::string log_output = output_path;
-    log_output.replace(log_output.end()-4, log_output.end(),"_log.txt");
-    std::ofstream logFile;
-    logFile.open(log_output);
+//    std::string log_output = output_path;
+//    log_output.replace(log_output.end()-4, log_output.end(),"_log.txt");
+//    std::ofstream logFile;
+//    logFile.open(log_output);
 
     float kl;
+    std::cout << "M_ = " << M_ << "     N_ = " << N_ << std::endl;
     MatrixXf Q( M_, N_ ), tmp1, unary( M_, N_ ), tmp2;
     unary.fill(0);
     if( unary_ ){
@@ -176,9 +177,9 @@ MatrixXf DenseCRF::mf_inference ( const MatrixXf & init, int n_iterations , std:
         }
         expAndNormalize( Q, tmp1 );
         kl = klDivergence(Q);
-          logFile << kl << std::endl;
+//          logFile << kl << std::endl;
     }
-    return Q;
+   return Q;
 }
 
 MatrixXf DenseCRF::mf_inference (const MatrixXf & init, std::string output_path, std::string dataset_name) const {
@@ -1552,18 +1553,8 @@ VectorXf DenseCRF::unaryEnergy(const VectorXs & l) const{
     if( unary_ ) {
         MatrixXf unary = unary_->get();
 	
-//	std::cout << "Printing unary" << std::endl;
-//	for(int i = 0; i < N_; i++){
-//		for(int j = 0; j < M_; j++){
-//			std::cout << unary(i, j) << " ";
-//		}
-//		std::cout << std::endl;
-//	}
-
-
         for( int i=0; i<N_; i++ )
             if ( 0 <= l[i] && l[i] < M_ ){
-//		    std::cout << unary( l[i], i ) << std::endl;
                 r[i] = unary( l[i], i );}
     }
     return r;

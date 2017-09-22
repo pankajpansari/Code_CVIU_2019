@@ -1,6 +1,7 @@
 #include "file_storage.hpp"
 #include "probimage.h"
 #include <iostream>
+#include <vector>
 #include <assert.h>
 #include <opencv2/opencv.hpp>
 #include <fstream>
@@ -262,6 +263,57 @@ unsigned char * load_image( const std::string & path_to_image, img_size & size){
     return char_img;
 }
 
+unsigned char * load_grayscale_image( const std::string & path_to_image, img_size & size, int imskip){
+
+    if (imskip < 1) imskip = 1;
+
+    //We copy the intensity values to all the channels of RGB image
+    //The whole codebase assumes the Gaussian kernel has RGB data
+    cv::Mat gray = cv::imread(path_to_image, CV_LOAD_IMAGE_GRAYSCALE);
+
+    std::vector<cv::Mat> img_vec(3);
+
+    img_vec.at(0) = gray;
+    img_vec.at(1) = gray;
+    img_vec.at(2) = gray;
+
+    cv::Mat img;
+    cv::merge(img_vec, img);
+
+    if(size.height != img.rows || size.width != img.cols) {
+//        std::cout << "Dimension doesn't correspond to unaries" << std::endl;
+        if (size.height == -1) {
+            size.height = img.rows;
+ //           std::cout << "Adjusting height because was undefined" << '\n';
+        }
+        if (size.width == -1) {
+            size.width = img.cols;
+  //          std::cout << "Adjusting width because was undefined" << '\n';
+        }
+    }
+
+    std::cout << "height = " << size.height << " " << "width = " << size.width << std::endl;
+ 
+    int down_width =  size.width/imskip;
+    int down_height =  size.height/imskip;
+
+    unsigned char * char_img = new unsigned char[down_width*down_height*3]();
+    for (int j=0; j < down_height; j++) {
+            for (int i=0; i < down_width; i++) {
+                cv::Vec3b intensity = img.at<cv::Vec3b>(j*imskip,i*imskip); // this comes in BGR
+                int ii = (int) i; 
+                int jj = (int) j;
+//              assert((ii+jj*down_width)*3+2 < down_width*down_height*3);
+                char_img[(ii+jj*down_width)*3+0] = intensity.val[0];
+                char_img[(ii+jj*down_width)*3+1] = intensity.val[1];
+                char_img[(ii+jj*down_width)*3+2] = intensity.val[2];
+		}
+    }
+
+    return char_img;
+
+}
+
 unsigned char * load_rescaled_image( const std::string & path_to_image, img_size & size, int imskip){
 
     if (imskip < 1) imskip = 1;
@@ -478,7 +530,23 @@ void save_map(const MatrixXf & estimates, const img_size & size, const std::stri
     cv::Mat img(size.height, size.width, CV_8UC3);
     cv::Vec3b intensity;
 
-    if(dataset_name == "Stereo_special"){
+    if(dataset_name == "Denoising"){
+         // Make the image
+        int max_label = *std::max_element(labeling.begin(), labeling.end());
+        for(int i=0; i<estimates.cols(); ++i) {
+
+            intensity[2] = 255.0*labeling[i]/max_label;
+            intensity[1] = 255.0*labeling[i]/max_label;
+            intensity[0] = 255.0*labeling[i]/max_label;
+
+            int col = i % size.width;
+            int row = (i - col)/size.width;
+            img.at<cv::Vec3b>(row, col) = intensity;
+        }
+
+    }
+
+    else if(dataset_name == "Stereo_special"){
         // Make the image
         int max_label = *std::max_element(labeling.begin(), labeling.end());
         for(int i=0; i<estimates.cols(); ++i) {

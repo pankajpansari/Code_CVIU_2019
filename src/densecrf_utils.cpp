@@ -464,7 +464,7 @@ float doLineSearch(const MatrixXf & Qs, const MatrixXf & Q, int iter, float prev
     //do binary search for line search
     float rangeStart = 0;
     //	float rangeEnd = prevStep; 
-    float rangeEnd = 0.1;
+    float rangeEnd = 1e-5;
 
     float currentStep = (rangeStart + rangeEnd)/2;
     //	float currentStep = prevStep;
@@ -487,10 +487,11 @@ float doLineSearch(const MatrixXf & Qs, const MatrixXf & Q, int iter, float prev
         obj1 = getObj(Q1);
         obj2 = getObj(Q2);
 
-      if(obj1 < obj2)
+        if(obj1 < obj2)
             rangeEnd = currentStep;
         else
             rangeStart = currentStep;
+
         currentStep = (rangeStart + rangeEnd)/2;
 
     }
@@ -678,7 +679,7 @@ float doLineSearch_rhst(const MatrixXf & Qs, const MatrixXf & Q, int iter, float
     //do binary search for line search
     float rangeStart = 0;
     //	float rangeEnd = prevStep; 
-    float rangeEnd = 0.1;
+    float rangeEnd = 0.01;
 
     float currentStep = (rangeStart + rangeEnd)/2;
     //	float currentStep = prevStep;

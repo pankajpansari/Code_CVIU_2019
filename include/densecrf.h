@@ -113,10 +113,11 @@ MatrixXf mf_inference ( const MatrixXf & init, int n_iterations , std::string ou
   MatrixXf lp_inference_prox_restricted(MatrixXf & init, LP_inf_params & params) const;
 
  // Run the submodular inference algorithm
+Eigen::MatrixXf readCSV(std::string file, int rows, int cols);
 float computeGaussianWeight(const VectorXf & feature_a, const VectorXf & feature_b);
 void getSubmodFnVal(int j, int i, MatrixXf &unary);
 void compareWithBf(MatrixXf &pairwise_filter, MatrixXf & grad);
-MatrixXf submodular_inference(MatrixXf & init, int width, int height, std::string output_path, std::string dataset_name);
+MatrixXf submodular_inference_dense(MatrixXf & init, int width, int height, std::string output_path, std::string dataset_name);
 MatrixXf submodular_inference_rhst(MatrixXf & init, int width, int height, std::string output_path, std::string tree_file, std::string dataset_name);
 void getConditionalGradient(MatrixXf & Qs, MatrixXf & Q);
 void getConditionalGradient_rhst(MatrixXf &Qs, MatrixXf & Q, const std::string filename, const MatrixXf &unary_meta);
@@ -133,7 +134,9 @@ void applyFilter_dc(MatrixXf & Qs, MatrixXf &Q);
 void applyFullBruteForce(MatrixXf &out, MatrixXf &in);
 void applyFullFilter(MatrixXf &out, MatrixXf &in);
 //void compare_filter(MatrixXf & Q, MatrixXf & ph_grad, MatrixXf & bf_grad) const;
-  // Perform the rounding based on argmaxes
+//
+
+// Perform the rounding based on argmaxes
   MatrixXf max_rounding(const MatrixXf & estimates) const;
   // Perform randomized roundings
   MatrixXf interval_rounding(const MatrixXf & estimates, int nb_random_rounding = 10) const;
