@@ -162,7 +162,7 @@ void SparseCRF::getConditionalGradient(MatrixXf &Qs, MatrixXf & Q, int grid_size
 	greedyAlgorithm(Qs, negGrad, grid_size);	
 }
 
-void SparseCRF::submodularFrankWolfe(MatrixXf & init, int grid_size){
+void SparseCRF::submodularFrankWolfe(MatrixXf & init, int grid_size, std::string log_filename){
 
 
     MatrixXf Q( M_, N_ ), Qs( M_, N_); //Q is the current point, Qs is the conditional gradient
@@ -174,8 +174,7 @@ void SparseCRF::submodularFrankWolfe(MatrixXf & init, int grid_size){
     
     //log file
     std::ofstream logFile;
-    logFile.open("/home/pankaj/SubmodularInference/data/working/07_09_2017/log.txt");
-
+    logFile.open(log_filename);
 
     float step = 0;
     
@@ -187,17 +186,22 @@ void SparseCRF::submodularFrankWolfe(MatrixXf & init, int grid_size){
 
     for(int k = 1; k <= 100; k++){
 
+      getNegGradient(negGrad, Q); //negative gradient
+
       getConditionalGradient(Qs, Q, grid_size);
 
+//      float fenchelGap = (Qs - Q).cwiseProduct(negGrad).sum();
+    
       step = 2.0/(k + 2);
 
-//        cout << "conditional grad = " << endl << Qs << endl;
       Q = Q + step*(Qs - Q); 
 
       objVal = getObj(Q);
 
       logFile << k << " " << objVal << " " << step << std::endl;
-      std::cout << "Iter: " << k << " Obj = " << objVal << " Step size = " << step << std::endl;
+
+ //     std::cout << "Iter: " << k << " Obj = " << objVal << " Step size = " << step << " Gap = " << fenchelGap << std::endl;
+      std::cout << "Iter: " << k << " Obj = " << objVal << " Step size = " << step;
 
     }
     std::cout << "Upper bound = " << objVal << std::endl;

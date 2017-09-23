@@ -10,7 +10,6 @@ private:
     Eigen::MatrixXf unary_;
     float pairwise_weight_;    
 //    // Store all pairwise potentials
-//    std::vector<PairwisePotential*> pairwise_;
 
 public:
     // Create a dense CRF model of size N with M labels
@@ -32,6 +31,6 @@ public:
     
     Eigen::MatrixXf getUnary();
 
-    void submodularFrankWolfe(Eigen::MatrixXf & init, int grid_size);
+    void submodularFrankWolfe(Eigen::MatrixXf & init, int grid_size, std::string log_filename);
 
 };
