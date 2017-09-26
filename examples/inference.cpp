@@ -104,8 +104,8 @@ void image_inference(std::string image_file, std::string unary_file, std::string
     std::vector<int> pixel_ids;
     start = std::chrono::high_resolution_clock::now();
 
-
-    Q = crf.unary_init();
+    //check unary_init function: initialise with marginals or with unaries?
+//    Q = crf.unary_init();
     if (method == "mf5") {
         std::cout << "Starting mf inference " << std::endl;
         Q = crf.mf_inference(Q, 5, output_path, dataset_name);

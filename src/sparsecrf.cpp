@@ -27,6 +27,10 @@ struct Neighbor{
 SparseCRF::SparseCRF(int W, int H, int M): W_(W), H_(H), M_(M), N_(H*W){
     unary_ = Eigen::MatrixXf::Zero(M_, N_);
     pairwise_weight_ = 0; 
+    std::cout <<"N_ = " << N_ << " M_ = " << M_ << std::endl;
+}
+
+SparseCRF::~SparseCRF(){
 }
 
 //////////////////////////////
@@ -73,7 +77,7 @@ Eigen::MatrixXf SparseCRF::getUnary() {
     return unary_;
 }
 
-void SparseCRF::setUnary(Eigen::MatrixXf unary) {
+void SparseCRF::setUnary(const Eigen::MatrixXf &unary) {
     unary_ = unary;
 }
 /////////////////////////////////
@@ -140,10 +144,11 @@ void SparseCRF::greedyAlgorithm(MatrixXf &out, MatrixXf &grad, int grid_size){
         auto comparator = [&grad_j](int a, int b){ return grad_j[a] > grad_j[b]; };
         sort(y.begin(), y.end(), comparator);
 
-        std::sort(grad_j.data(), grad_j.data() + grad_j.size(), std::greater<float>()); 
+//        std::sort(grad_j.data(), grad_j.data() + grad_j.size(), std::greater<float>()); 
 //        cout << grad_j << endl << endl;
         std::vector<int> S = {};
         for(int i = 0; i < y.size(); i++){
+            y[i] = i;
             out(j, y[i]) = gridEnergyChange(y[i], S, grid_size, j);
             S.push_back(y[i]);
         }
@@ -162,7 +167,7 @@ void SparseCRF::getConditionalGradient(MatrixXf &Qs, MatrixXf & Q, int grid_size
 	greedyAlgorithm(Qs, negGrad, grid_size);	
 }
 
-void SparseCRF::submodularFrankWolfe(MatrixXf & init, int grid_size, std::string log_filename){
+MatrixXf SparseCRF::submodularFrankWolfe(MatrixXf & init, int grid_size, std::string log_filename){
 
 
     MatrixXf Q( M_, N_ ), Qs( M_, N_); //Q is the current point, Qs is the conditional gradient
@@ -182,9 +187,10 @@ void SparseCRF::submodularFrankWolfe(MatrixXf & init, int grid_size, std::string
 
     objVal = getObj(Q);
 
+    std::cout << "Iter: " << 0 << " Obj = " << objVal << " Step size = " << step << std::endl;
     logFile << "0 " << objVal << " " << step << std::endl;
 
-    for(int k = 1; k <= 100; k++){
+    for(int k = 1; k <= 10; k++){
 
       getNegGradient(negGrad, Q); //negative gradient
 
@@ -201,8 +207,9 @@ void SparseCRF::submodularFrankWolfe(MatrixXf & init, int grid_size, std::string
       logFile << k << " " << objVal << " " << step << std::endl;
 
  //     std::cout << "Iter: " << k << " Obj = " << objVal << " Step size = " << step << " Gap = " << fenchelGap << std::endl;
-      std::cout << "Iter: " << k << " Obj = " << objVal << " Step size = " << step;
+      std::cout << "Iter: " << k << " Obj = " << objVal << " Step size = " << step << std::endl;
 
     }
     std::cout << "Upper bound = " << objVal << std::endl;
+    return Q;
 }

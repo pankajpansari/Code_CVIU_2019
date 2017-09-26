@@ -404,6 +404,7 @@ void load_unary_synthetic(const std::string file_path, int nvar, int nlabel, Mat
                 i = i + 1;
     	}
     }
+    myfile.close();
 }
 
 MatrixXf load_unary_from_text(const std::string & path_to_unary, img_size& size, int imskip) {
@@ -440,11 +441,13 @@ MatrixXf load_unary_from_text(const std::string & path_to_unary, img_size& size,
 
         //note that unary file stored data in column-major format, but image read in row major format
         //we are going to store unaries as row-major as well
-        int j = variable_count % size.height;
+
+       int j = variable_count % size.height;
         int i = variable_count/size.height;
             
         int row_major_var_count = j * size.width + i;
         unaries.col(row_major_var_count) = unary_current_variable;
+//        unaries.col(variable_count) = unary_current_variable;
     }
  
 
@@ -458,8 +461,8 @@ MatrixXf load_unary_from_text(const std::string & path_to_unary, img_size& size,
 		  for(int k=0; k< nlabel; ++k)
                      unaries_down(k, i*down_width + j) = unaries(k, (i*down_width + j)*imskip);
 
-   return unaries_down;
-//   return unaries;
+//   return unaries_down;
+   return unaries;
 }
 
 MatrixXf load_unary_rescaled( const std::string & path_to_unary, img_size& size, int imskip, int max_label) {
@@ -574,6 +577,12 @@ void save_map(const MatrixXf & estimates, const img_size & size, const std::stri
             intensity[1] = 255.0*labeling[i]/max_label;
             intensity[0] = 255.0*labeling[i]/max_label;
 
+     //       //column major order
+     //       int row = i % size.height;
+     //       int col = (i - row)/size.height;
+     //       img.at<cv::Vec3b>(row, col) = intensity;
+
+            //row major order
             int col = i % size.width;
             int row = (i - col)/size.width;
             img.at<cv::Vec3b>(row, col) = intensity;

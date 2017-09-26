@@ -15,9 +15,10 @@ public:
     // Create a dense CRF model of size N with M labels
 //    SparseCRF( int N, int M, int H, int W );
     SparseCRF(int W, int H, int M);
+    ~SparseCRF();
  
     void readUnary(std::string file, int rows, int cols);
-    void setUnary(Eigen::MatrixXf unary);
+    void setUnary(const Eigen::MatrixXf &unary);
     
     void setPottsWeight(float weight);
 
@@ -31,6 +32,6 @@ public:
     
     Eigen::MatrixXf getUnary();
 
-    void submodularFrankWolfe(Eigen::MatrixXf & init, int grid_size, std::string log_filename);
+    Eigen::MatrixXf submodularFrankWolfe(Eigen::MatrixXf & init, int grid_size, std::string log_filename);
 
 };
