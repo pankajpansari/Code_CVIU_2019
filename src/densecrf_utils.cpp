@@ -459,18 +459,14 @@ bool fileExists(const std::string& filename)
     return false;
 }
 
-float doLineSearch(const MatrixXf & Qs, const MatrixXf & Q, int iter, float prevStep){
-
+float doLineSearch(const MatrixXf & Qs, const MatrixXf & Q, float rangeEnd){
+//rangeEnd default is 1
     //do binary search for line search
     float rangeStart = 0;
-    //	float rangeEnd = prevStep; 
-    float rangeEnd = 1e-5;
 
     float currentStep = (rangeStart + rangeEnd)/2;
-    //	float currentStep = prevStep;
     float candidateStep1 = 0, candidateStep2 = 0;
     float obj1 = 0, obj2 = 0;
-    //        float epsilon = 1e-7;
 
     MatrixXf Q1 = MatrixXf::Zero(Q.rows(), Q.cols());
     MatrixXf Q2 = MatrixXf::Zero(Q.rows(), Q.cols());
@@ -478,8 +474,6 @@ float doLineSearch(const MatrixXf & Qs, const MatrixXf & Q, int iter, float prev
     for(int binaryIter = 0; binaryIter <= 10; binaryIter++){	
         candidateStep1 = (rangeStart + currentStep)/2;
         candidateStep2 = (rangeEnd + currentStep)/2;
-
-        //		currentStep = (rangeStart + rangeEnd)/2;
 
         Q1 = (1 - candidateStep1)*Q + candidateStep1*Qs;
         Q2 = (1 - candidateStep2)*Q + candidateStep2*Qs;

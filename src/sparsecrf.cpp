@@ -164,6 +164,12 @@ void SparseCRF::getConditionalGradient(MatrixXf &Qs, MatrixXf & Q, int grid_size
 
 void SparseCRF::submodularFrankWolfe(MatrixXf & init, int grid_size, std::string log_filename){
 
+    //clock
+    typedef std::chrono::high_resolution_clock::time_point htime;
+    htime start, end;
+    double timing;
+    start = std::chrono::high_resolution_clock::now();
+
     MatrixXf Q( M_, N_ ), Qs( M_, N_); //Q is the current point, Qs is the conditional gradient
 
     MatrixXf Qs_bf = MatrixXf::Zero(M_, N_);
@@ -189,19 +195,23 @@ void SparseCRF::submodularFrankWolfe(MatrixXf & init, int grid_size, std::string
 
       getConditionalGradient(Qs, Q, grid_size);
 
-//      float fenchelGap = (Qs - Q).cwiseProduct(negGrad).sum();
+      float fenchelGap = (Qs - Q).cwiseProduct(negGrad).sum();
     
-      step = 2.0/(k + 2);
+//      step = 2.0/(k + 2);
+      step = doLineSearch(Qs, Q);
 
       Q = Q + step*(Qs - Q); 
 
       objVal = getObj(Q);
 
-      logFile << k << " " << objVal << " " << step << std::endl;
-
+    end = std::chrono::high_resolution_clock::now();
+    timing = std::chrono::duration_cast<std::chrono::duration<double>>(end-start).count();
+    
+      logFile << timing << '\t' << objVal << '\t' << step << std::endl;
  //     std::cout << "Iter: " << k << " Obj = " << objVal << " Step size = " << step << " Gap = " << fenchelGap << std::endl;
-      std::cout << "Iter: " << k << " Obj = " << objVal << " Step size = " << step << std::endl;
-
+      std::cout << "Iter: " << k << " Obj = " << objVal << " Step size = " << step << " Time = " << timing << " Gap = " << fenchelGap << std::endl;
+        if(fenchelGap < 1)
+            break;
     }
     std::cout << "Upper bound = " << objVal << std::endl;
 }

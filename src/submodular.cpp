@@ -111,7 +111,7 @@ MatrixXf DenseCRF::submodular_inference_dense( MatrixXf & init, int width, int h
 
       getConditionalGradient(Qs, Q);
 
-      step = doLineSearch(Qs, Q, k, step);
+      step = doLineSearch(Qs, Q, 1e-5);
 
       Q = Q + step*(Qs - Q); 
 
