@@ -3,7 +3,7 @@
 class SparseCRF{
 
 private:
-    int N_, M_; //N_ -> number of variables (= H_ X W_), M_ -> number of labels
+    int N_, M_, L_; //N_ -> number of variables (= H_ X W_), M_ -> number of meta-labels, L_ -> number of labels
     int H_, W_; //H_ -> height of grid, W_ -> width of grid
     
     // Store the unary term
@@ -15,7 +15,8 @@ public:
     // Create a dense CRF model of size N with M labels
 //    SparseCRF( int N, int M, int H, int W );
     SparseCRF(int W, int H, int M);
- 
+    SparseCRF(int W, int H, int M, int L);
+
     void readUnary(std::string file, int rows, int cols);
     void setUnary(Eigen::MatrixXf unary);
     

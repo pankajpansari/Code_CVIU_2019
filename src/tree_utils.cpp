@@ -2,6 +2,8 @@
 #include <iostream>
 #include <sstream>
 #include <vector>
+#include <vector>
+#include <assert.h>
 
 //code for reading the tree from the short format, extracting information from it and printing the long format tree file
 

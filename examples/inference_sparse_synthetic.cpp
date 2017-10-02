@@ -27,15 +27,12 @@ int main(int argc, char *argv[]){
 
     std::string log_dir(argv[5]);
 
-    std::string unary_file = "/home/pankaj/SubmodularInference/data/input/unaries/" + arg1;
-
-    std::string log_file = log_dir + "/submodular_log_w_" + std::to_string(int(weight)) + "_" + arg1;
- 
     //create sparse crf
     SparseCRF crf(H, H, M);
 
     //set unary
     MatrixXf unary = MatrixXf::Zero(M, H*H);
+    std::string unary_file = "/home/pankaj/SubmodularInference/data/input/unaries/" + arg1;
     load_unary_synthetic(unary_file, H*H, M, unary);
     crf.setUnary(unary);
 
@@ -44,5 +41,6 @@ int main(int argc, char *argv[]){
     
     //do inference
     std::cout << "unary: " << argv[1] << " weight: " << std::to_string(int(weight)) << std::endl; 
+    std::string log_file = log_dir + "/submodular_log_w_" + std::to_string(int(weight)) + "_" + arg1;
     crf.submodularFrankWolfe(unary, H, log_file);
 }

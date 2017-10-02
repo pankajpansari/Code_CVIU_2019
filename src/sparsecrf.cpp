@@ -24,11 +24,15 @@ struct Neighbor{
 /////  Alloc / Dealloc  /////
 /////////////////////////////
 
-SparseCRF::SparseCRF(int W, int H, int M): W_(W), H_(H), M_(M), N_(H*W){
+SparseCRF::SparseCRF(int W, int H, int M): W_(W), H_(H), M_(M), N_(H*W), L_(M){
     unary_ = Eigen::MatrixXf::Zero(M_, N_);
     pairwise_weight_ = Eigen::VectorXf::Zero(M_, N_); 
 }
 
+SparseCRF::SparseCRF(int W, int H, int M, int L): W_(W), H_(H), M_(M), N_(H*W), L_(L){
+    unary_ = Eigen::MatrixXf::Zero(M_, N_);
+    pairwise_weight_ = Eigen::VectorXf::Zero(M_, N_); 
+}
 //////////////////////////////
 /////  Unary Potentials  /////
 //////////////////////////////
@@ -74,7 +78,13 @@ Eigen::MatrixXf SparseCRF::getUnary() {
 }
 
 void SparseCRF::setUnary(Eigen::MatrixXf unary) {
+    assert(unary_.rows() == M_ && unary_cols() == N_);
     unary_ = unary;
+}
+
+void SparseCRF::setTreeUnary(Eigen::MatrixXf unary) {
+    assert(unary_.rows() == L_ && unary_cols() == N_);
+    unary_.block(0, 0, L_, N_) = unary;
 }
 /////////////////////////////////
 /////  Pairwise Potentials  /////
