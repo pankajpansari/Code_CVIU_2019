@@ -3,12 +3,12 @@
 class SparseCRF{
 
 private:
-    int N_, M_;
-    int H_, W_;
+    int N_, M_; //N_ -> number of variables (= H_ X W_), M_ -> number of labels
+    int H_, W_; //H_ -> height of grid, W_ -> width of grid
     
     // Store the unary term
     Eigen::MatrixXf unary_;
-    float pairwise_weight_;    
+    Eigen::VectorXf pairwise_weight_;    
 //    // Store all pairwise potentials
 
 public:

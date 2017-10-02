@@ -26,7 +26,7 @@ struct Neighbor{
 
 SparseCRF::SparseCRF(int W, int H, int M): W_(W), H_(H), M_(M), N_(H*W){
     unary_ = Eigen::MatrixXf::Zero(M_, N_);
-    pairwise_weight_ = 0; 
+    pairwise_weight_ = Eigen::VectorXf::Zero(M_, N_); 
 }
 
 //////////////////////////////
@@ -81,7 +81,9 @@ void SparseCRF::setUnary(Eigen::MatrixXf unary) {
 /////////////////////////////////
 
 void SparseCRF::setPottsWeight(float weight) {
-   pairwise_weight_ = weight; 
+    for(int i = 0; i < M_; i++){
+        pairwise_weight_(i) = weight;
+    }
 }
 
 /////////////////////////////////////////
@@ -116,10 +118,10 @@ float SparseCRF::gridEnergyChange(int var, std::vector<int> S, int grid_size, in
     for(int i = 0; i < 4; i++){
         if(neighbor[i] != -1){
             if(find(S.begin(), S.end(), neighbor[i]) != S.end()){
-               pairwise_val = pairwise_val - 0.5*pairwise_weight_; 
+               pairwise_val = pairwise_val - 0.5*pairwise_weight_(label); 
             }
             else{
-               pairwise_val =  pairwise_val + 0.5*pairwise_weight_; 
+               pairwise_val =  pairwise_val + 0.5*pairwise_weight_(label); 
             }
         }
     }
