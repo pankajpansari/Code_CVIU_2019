@@ -1,8 +1,10 @@
 #include <fstream>
 #include <iostream>
+#include <vector>
 #include "densecrf_utils.h"
 #include <Eigen/Eigenvalues>
 #include <sys/stat.h>
+#include "tree_utils.h"
 
 /////////////////////////////
 /////  eigen-utils      /////
@@ -624,7 +626,38 @@ void getMarginals_rhst(MatrixXf & out, const MatrixXf & in, const std::string fi
     }
 } 
 
-float getObj_rhst(const MatrixXf & Q, const std::string filename){
+float getObj_rhst(const MatrixXf & Q, const std::vector<node> &G){
+
+    //add up rows of Q corresponding to paths of leaves
+     
+    node root = getRoot(G);
+    std::vector<node> leaves = getLeafNodes(root);
+    int L = leaves.size();
+    int N = Q.cols();
+    MatrixXf Q_sum = MatrixXf::Zero(L, N); 
+
+    for(int i = 0; i < leaves.size(); i++){
+        std::vector<node> path = getPath(leaves[i]);
+        for(int j = 0; j < path.size(); j++)
+            Q_sum.row(i) += Q.row(path[j].id);
+    }
+    
+    //same now as getObj
+    float logSum = 0, expSum = 0, minMarginal = 0;
+
+    for(int i = 0; i < Q_sum.cols(); i++){
+        expSum = 0;
+        VectorXf b = Q_sum.col(i);
+        minMarginal = b.minCoeff();
+        b.array() -= minMarginal; 
+        b = (-b.array()).exp(); 
+        expSum = b.sum();
+        logSum = logSum + log(expSum) - minMarginal;
+    }	
+    return logSum;
+}
+
+float getObj_rhst2(const MatrixXf & Q, const std::string filename){
 
     //the part till getting mMat is same as for getting -ve grad
     using namespace std;
@@ -668,95 +701,100 @@ float getObj_rhst(const MatrixXf & Q, const std::string filename){
     return logSum;
 }
 
-float doLineSearch_rhst(const MatrixXf & Qs, const MatrixXf & Q, int iter, float prevStep, const std::string tree_file){
-
-    //do binary search for line search
-    float rangeStart = 0;
-    //	float rangeEnd = prevStep; 
-    float rangeEnd = 0.01;
-
-    float currentStep = (rangeStart + rangeEnd)/2;
-    //	float currentStep = prevStep;
-    float candidateStep1 = 0, candidateStep2 = 0;
-    float obj1 = 0, obj2 = 0;
-    //        float epsilon = 1e-7;
-
-    MatrixXf Q1 = MatrixXf::Zero(Q.rows(), Q.cols());
-    MatrixXf Q2 = MatrixXf::Zero(Q.rows(), Q.cols());
-
-    for(int binaryIter = 0; binaryIter <= 10; binaryIter++){	
-        candidateStep1 = (rangeStart + currentStep)/2;
-        candidateStep2 = (rangeEnd + currentStep)/2;
-
-        //		currentStep = (rangeStart + rangeEnd)/2;
-
-        Q1 = (1 - candidateStep1)*Q + candidateStep1*Qs;
-        Q2 = (1 - candidateStep2)*Q + candidateStep2*Qs;
-
-        obj1 = getObj_rhst(Q1, tree_file);
-        obj2 = getObj_rhst(Q2, tree_file);
-
-      if(obj1 < obj2)
-            rangeEnd = currentStep;
-        else
-            rangeStart = currentStep;
-        currentStep = (rangeStart + rangeEnd)/2;
-
-    }
-    return currentStep;
-}
-void getNegGradient_rhst(MatrixXf & negGrad, const MatrixXf & Q, const std::string filename){
-
-    using namespace std;
-    ifstream treefile(filename);
-    string s;
-
-    getline(treefile, s);
-    istringstream ss(s);
-
-    int N = Q.cols();
-    int M, L;
-    ss >> M >> L;
-
-    //Q to Q_L
-    //for each leaf node in Q_L, sum up rows of Q corresponding to path nodes of that leaf
-    MatrixXf Q_L = MatrixXf::Zero(L, N);
-    int leaf, temp;
-    for(int i = 0; i < L; i++){
-        getline(treefile, s);
-        istringstream ss(s);
-        ss >> leaf;
-        while(ss >> temp){
-//            Q_L.row(leaf) += temp2_mat.row(temp);
-            Q_L.row(leaf) += Q.row(temp);
-        }   
-    }
-
-    float minVal = 0;
-    for(int i = 0; i < Q.cols(); i++){
-        minVal = Q_L.col(i).minCoeff();
-        Q_L.col(i) = Q_L.col(i).array() - minVal;
-    }
- 
-    MatrixXf mMat = (-Q_L).array().exp(); 
-
-    //m to negGrad
-    //for each label or meta-label in negGrad, (sum of child labels of this node)/total sum
-     int metalabel;  // to index the row of label or metalabel in negGrad
-     for(int i = 0; i < M; i++){
-        getline(treefile, s);
-        istringstream ss(s);
-        ss >> metalabel;
-        while(ss >> temp){
-            negGrad.row(metalabel) += mMat.row(temp);
-        }   
-    }
-    for(int i = 0; i < N; i++){
-        negGrad.col(i) = negGrad.col(i).array()/mMat.col(i).sum();
-    }
-}
-
+//float doLineSearch_rhst(const MatrixXf & Qs, const MatrixXf & Q, int iter, float prevStep, const std::string tree_file){
+//
+//    //do binary search for line search
+//    float rangeStart = 0;
+//    //	float rangeEnd = prevStep; 
+//    float rangeEnd = 0.01;
+//
+//    float currentStep = (rangeStart + rangeEnd)/2;
+//    //	float currentStep = prevStep;
+//    float candidateStep1 = 0, candidateStep2 = 0;
+//    float obj1 = 0, obj2 = 0;
+//    //        float epsilon = 1e-7;
+//
+//    MatrixXf Q1 = MatrixXf::Zero(Q.rows(), Q.cols());
+//    MatrixXf Q2 = MatrixXf::Zero(Q.rows(), Q.cols());
+//
+//    for(int binaryIter = 0; binaryIter <= 10; binaryIter++){	
+//        candidateStep1 = (rangeStart + currentStep)/2;
+//        candidateStep2 = (rangeEnd + currentStep)/2;
+//
+//        //		currentStep = (rangeStart + rangeEnd)/2;
+//
+//        Q1 = (1 - candidateStep1)*Q + candidateStep1*Qs;
+//        Q2 = (1 - candidateStep2)*Q + candidateStep2*Qs;
+//
+//        obj1 = getObj_rhst(Q1, tree_file);
+//        obj2 = getObj_rhst(Q2, tree_file);
+//
+//      if(obj1 < obj2)
+//            rangeEnd = currentStep;
+//        else
+//            rangeStart = currentStep;
+//        currentStep = (rangeStart + rangeEnd)/2;
+//
+//    }
+//    return currentStep;
+//}
+//void getNegGradient_rhst(MatrixXf & negGrad, const MatrixXf & Q, const std::string filename){
+//
+//    using namespace std;
+//    ifstream treefile(filename);
+//    string s;
+//
+//    getline(treefile, s);
+//    istringstream ss(s);
+//
+//    int N = Q.cols();
+//    int M, L;
+//    ss >> M >> L;
+//
+//    //Q to Q_L
+//    //for each leaf node in Q_L, sum up rows of Q corresponding to path nodes of that leaf
+//    MatrixXf Q_L = MatrixXf::Zero(L, N);
+//    int leaf, temp;
+//    for(int i = 0; i < L; i++){
+//        getline(treefile, s);
+//        istringstream ss(s);
+//        ss >> leaf;
+//        while(ss >> temp){
+////            Q_L.row(leaf) += temp2_mat.row(temp);
+//            Q_L.row(leaf) += Q.row(temp);
+//        }   
+//    }
+//
+//    float minVal = 0;
+//    for(int i = 0; i < Q.cols(); i++){
+//        minVal = Q_L.col(i).minCoeff();
+//        Q_L.col(i) = Q_L.col(i).array() - minVal;
+//    }
+// 
+//    MatrixXf mMat = (-Q_L).array().exp(); 
+//
+//    //m to negGrad
+//    //for each label or meta-label in negGrad, (sum of child labels of this node)/total sum
+//     int metalabel;  // to index the row of label or metalabel in negGrad
+//     for(int i = 0; i < M; i++){
+//        getline(treefile, s);
+//        istringstream ss(s);
+//        ss >> metalabel;
+//        while(ss >> temp){
+//            negGrad.row(metalabel) += mMat.row(temp);
+//        }   
+//    }
+//    for(int i = 0; i < N; i++){
+//        negGrad.col(i) = negGrad.col(i).array()/mMat.col(i).sum();
+//    }
+//}
+//
 void getdim(MatrixXf &A){
     std::cout << "rows: " << A.rows() << "      cols: " << A.cols() << std::endl; 
 }
 
+//int main(int argc, char *argv[]){
+//    std::vector<node> G = readTree(argv[1]);
+//    int
+//    return 0;
+//}

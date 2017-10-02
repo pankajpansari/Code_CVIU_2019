@@ -96,6 +96,9 @@ void SparseCRF::setPottsWeight(float weight) {
     }
 }
 
+void SparseCRF::setTreeWeight(Eigen::VectorXf pairwise_weight) {
+    pairwise_weight_ = pairwise_weight;
+}
 /////////////////////////////////////////
 void SparseCRF::getNeighbors(int var, int grid_size, int *neighbor){ //there are grid_size*grid_size variables
 

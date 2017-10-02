@@ -19,8 +19,10 @@ public:
 
     void readUnary(std::string file, int rows, int cols);
     void setUnary(Eigen::MatrixXf unary);
+    void setTreeUnary(Eigen::MatrixXf unary);
     
     void setPottsWeight(float weight);
+    void setTreeWeight(Eigen::VectorXf pairwise);
 
     void getNeighbors(int var, int grid_size, int *neighbor);
     

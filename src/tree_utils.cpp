@@ -2,17 +2,11 @@
 #include <iostream>
 #include <sstream>
 #include <vector>
-#include <vector>
 #include <assert.h>
+#include <Eigen/Dense>
+#include "tree_utils.h"
 
 //code for reading the tree from the short format, extracting information from it and printing the long format tree file
-
-struct node{
-    int id;
-    node* parent;
-    std::vector<node*> children;
-    float weight;
-};
 
 /////////////////////////////////
 /// for reading graph ////
@@ -87,6 +81,8 @@ std::vector<node> readTree(const std::string filename){
             G[child_id].parent = &G[parent_id];
         }
     }
+
+    treefile.close();
     return G;
 }
 
@@ -96,7 +92,7 @@ std::vector<node> readTree(const std::string filename){
 //////////////////////////////////////////
 
 //void getLeafNodes(node parent, std::vector<int> &leaf_vec)
-void getLeafNodes(node parent)
+void printLeafNodes(node parent)
 {
     //returns the list of leaves of the subtree with parent as the root
     using namespace std;
@@ -107,7 +103,41 @@ void getLeafNodes(node parent)
     }
     else{
         for(int i = 0; i < parent.children.size(); i++){
+            printLeafNodes(*parent.children[i]);
+        }
+    }
+    return;
+}
+
+std::vector<node> getLeafNodes(node parent)
+{
+    //returns the list of leaves of the subtree with parent as the root
+    static std::vector<node> leaves;
+    using namespace std;
+    if(parent.children.size() == 0){
+        leaves.push_back(parent);
+        return leaves;
+    }
+    else{
+        for(int i = 0; i < parent.children.size(); i++){
             getLeafNodes(*parent.children[i]);
+        }
+    }
+    return leaves;
+}
+
+void checkLeafNodes(node parent, int M)
+{
+    //returns the list of leaves of the subtree with parent as the root
+    using namespace std;
+    if(parent.children.size() == 0){
+        assert(parent.id >= 0 && parent.id < M && "Leaves in tree file should be numbered 0 - (#labels - 1)");
+//        leaves.push_back(parent)
+        return;
+    }
+    else{
+        for(int i = 0; i < parent.children.size(); i++){
+            checkLeafNodes(*parent.children[i], M);
         }
     }
     return;
@@ -141,16 +171,15 @@ int getLeafCount(node parent){
 //    return;
 //}
 
-void getPath(node t){
+std::vector<node> getPath(node t){
     //given the tree G, and the leaf node t, get the list of nodes on the path from root to t
     node parent_node = t;
-//    std::cout << "Path from root to node id " << t.id << ":     ";
+    std::vector<node> path;
     while(parent_node.parent != NULL){
-        std::cout << " " << parent_node.id;
-//        path_nodes.push_back(parent_node);
+        path.push_back(parent_node);
         parent_node = *parent_node.parent; 
     }
-    std::cout << std::endl;
+    return path;
 }
 
 
@@ -172,7 +201,7 @@ void printLongTreeFile(const std::vector<node> &G){
     for(int i = 0; i < G.size(); i++){
         if(G[i].id != root.id){
             std::cout << G[i].id;
-            getLeafNodes(G[i]);
+            printLeafNodes(G[i]);
             std::cout << std::endl;
         } 
     }
@@ -186,8 +215,49 @@ void printLongTreeFile(const std::vector<node> &G){
     }
 }
 
-int main(int argc, char *argv[]){
-    std::vector<node> G = readTree(argv[1]);
-    printLongTreeFile(G);
-    return 0;
+int getNumMetaLabels(const std::vector<node> &G){
+    return G.size() - 1; //-1 to exclude the root
 }
+
+int getNumLabels(const std::vector<node> &G, int M){
+    node root = getRoot(G);
+    if( M != 0)
+        checkLeafNodes(root, M);
+    return getLeafCount(root);
+}
+
+Eigen::VectorXf getWeight(const std::vector<node> &G){
+    int M = getNumMetaLabels(G);
+    node root = getRoot(G);
+
+    Eigen::VectorXf weight = Eigen::VectorXf::Zero(M);
+    int label = 0;
+    for(int i = 0; i < G.size(); i++){
+        if(G[i].id != root.id){
+            label = G[i].id;
+            weight(label) = G[i].weight;
+        } 
+    }
+    return weight;
+}
+
+//jint main(int argc, char *argv[]){
+//j    std::vector<node> G = readTree(argv[1]);
+//j    node root = getRoot(G);
+//j    std::vector<node> leaves = getLeafNodes(root);
+//j    for(int i = 0; i < leaves.size(); i++){
+//j        std::cout << "Path of leaf " << leaves[i].id << std::endl;
+//j        std::vector<node> path = getPath(leaves[i]);
+//j        for(int j = 0; j < path.size(); j++){
+//j            std::cout << path[j].id << '\t';
+//j        }
+//j        std::cout << std::endl;
+//j    }
+//j//    int L = getNumLabels(G, 16);
+//j//    for(int i = 0; i < L; i++){
+//j//        getPath(G[i]);
+//j//    }
+//j//    int M = getNumMetaLabels(G);
+//j//    std::cout << getWeight(G) << std::endl;
+//j    return 0;
+//j}

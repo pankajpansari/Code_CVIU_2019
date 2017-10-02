@@ -1,5 +1,6 @@
 #pragma once
 #include <Eigen/Core>
+#include "tree_utils.h"
 
 using namespace Eigen;
 
@@ -81,7 +82,7 @@ void update_restricted_matrix(MatrixXf & out, const MatrixXf & in, const std::ve
 void update_extended_matrix(MatrixXf & out, const MatrixXf & in, const std::vector<int> & pindices);
 bool fileExists(const std::string& filename);
 float getObj(const MatrixXf & Q);
-float getObj_rhst(const MatrixXf & Q, const std::string filename);
+float getObj_rhst(const MatrixXf & Q, const std::vector<node> &G);
 float doLineSearch_rhst(const MatrixXf & Qs, const MatrixXf & Q, int iter, float prevStep, const std::string filename);
 float getDeriv(const MatrixXf & Qs, const MatrixXf & Q, float step);
 float doLineSearch(const MatrixXf & Qs, const MatrixXf & Q, float rangeEnd = 1);
