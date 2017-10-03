@@ -88,6 +88,7 @@ float getDeriv(const MatrixXf & Qs, const MatrixXf & Q, float step);
 float doLineSearch(const MatrixXf & Qs, const MatrixXf & Q, float rangeEnd = 1);
 float doLineSearch2(const MatrixXf & Qs, const MatrixXf & Q, int iter, float prevStep, std::string output_path);
 void getNegGradient(MatrixXf & negGrad, const MatrixXf & Q);
-void getNegGradient_rhst(MatrixXf & negGrad, const MatrixXf & Q, const std::string filename);
+void getNegGradient_rhst(MatrixXf & negGrad, const MatrixXf & Q, const std::vector<node> &G);
 void getdim(MatrixXf &A);
 void getMarginals_rhst(MatrixXf & out, const MatrixXf & in, const std::string filename);
+bool checkNan(MatrixXf &A);

@@ -131,10 +131,10 @@ float SparseCRF::gridEnergyChange(int var, std::vector<int> S, int grid_size, in
     for(int i = 0; i < 4; i++){
         if(neighbor[i] != -1){
             if(find(S.begin(), S.end(), neighbor[i]) != S.end()){
-               pairwise_val = pairwise_val - 0.5*pairwise_weight_(label); 
+               pairwise_val = pairwise_val - pairwise_weight_(label); //0.5 not required here because tree assumes that
             }
             else{
-               pairwise_val =  pairwise_val + 0.5*pairwise_weight_(label); 
+               pairwise_val =  pairwise_val + pairwise_weight_(label); 
             }
         }
     }
@@ -212,8 +212,8 @@ void SparseCRF::submodularFrankWolfe(MatrixXf & init, int grid_size, std::string
 
       float fenchelGap = (Qs - Q).cwiseProduct(negGrad).sum();
     
-//      step = 2.0/(k + 2);
-      step = doLineSearch(Qs, Q);
+      step = 2.0/(k + 2);
+//      step = doLineSearch(Qs, Q);
 
       Q = Q + step*(Qs - Q); 
 

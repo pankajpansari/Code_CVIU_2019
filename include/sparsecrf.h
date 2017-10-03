@@ -31,6 +31,8 @@ public:
     void greedyAlgorithm(Eigen::MatrixXf &out, Eigen::MatrixXf &grad, int grid_size);
     
     void getConditionalGradient(Eigen::MatrixXf &Qs, Eigen::MatrixXf & Q, int grid_size);
+
+    void getConditionalGradient_rhst(Eigen::MatrixXf &Qs, Eigen::MatrixXf & Q, int grid_size, const std::vector<node> &G);
     
     Eigen::MatrixXf getUnary();
 

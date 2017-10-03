@@ -629,19 +629,24 @@ void getMarginals_rhst(MatrixXf & out, const MatrixXf & in, const std::string fi
 float getObj_rhst(const MatrixXf & Q, const std::vector<node> &G){
 
     //add up rows of Q corresponding to paths of leaves
-     
     node root = getRoot(G);
-    std::vector<node> leaves = getLeafNodes(root);
+    std::vector<node> leaves = getLeafNodes(G);
     int L = leaves.size();
     int N = Q.cols();
     MatrixXf Q_sum = MatrixXf::Zero(L, N); 
-
     for(int i = 0; i < leaves.size(); i++){
         std::vector<node> path = getPath(leaves[i]);
-        for(int j = 0; j < path.size(); j++)
-            Q_sum.row(i) += Q.row(path[j].id);
+        int leaf_id = leaves[i].id;
+        for(int j = 0; j < path.size(); j++){
+//            std::cout << "leaf = " << leaf_id << " path id = " << path[j].id << std::endl; 
+            Q_sum.row(leaf_id) += Q.row(path[j].id);
+        }
     }
-    
+
+      assert(checkNan(Q_sum) && "Q_sum has nan");
+//   bool r = Q_sum.isApprox(Q);
+
+ //  std::cout << r << std::endl;
     //same now as getObj
     float logSum = 0, expSum = 0, minMarginal = 0;
 
@@ -793,6 +798,16 @@ void getdim(MatrixXf &A){
     std::cout << "rows: " << A.rows() << "      cols: " << A.cols() << std::endl; 
 }
 
+bool checkNan(MatrixXf &A){
+     for(int i = 0; i < A.rows(); i++){
+         for(int j = 0; j < A.cols(); j++){
+             if(isnan(A(i, j)) == 1)
+                 return 0;
+//             assert(isnan(A(i, j)) == 0 && "matrix has nan elements");
+         }
+     }
+     return 1;
+}
 //int main(int argc, char *argv[]){
 //    std::vector<node> G = readTree(argv[1]);
 //    int
