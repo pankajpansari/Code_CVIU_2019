@@ -281,7 +281,7 @@ void SparseCRF::submodularFrankWolfe_tree(MatrixXf & init, int grid_size, std::s
       float fenchelGap = (Qs - Q).cwiseProduct(negGrad).sum();
     
       step = 2.0/(k + 2);
-//      step = doLineSearch(Qs, Q);
+//      step = doLineSearch_rhst(Qs, Q, 1, G);
 
       Q = Q + step*(Qs - Q); 
 

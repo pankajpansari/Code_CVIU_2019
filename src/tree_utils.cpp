@@ -255,11 +255,30 @@ Eigen::VectorXf getWeight(const std::vector<node> &G){
     return weight;
 }
 
+float sumPath(node t, const std::vector<node> &G){
+    float edgeSum = 0;
+    node root = getRoot(G);
+    while(t.id != root.id){
+        edgeSum += t.weight;
+        t = *t.parent;
+    }
+    return edgeSum;
+}
+
+//void printPairwiseTable(const std::vector<node> &G){
+////print hierarchical Potts penalty among labels
+////used for matlab trw
+//    vector<node> leaf_nodes = getLeafNodes(G);
+//    for(int i = 0; i < leaf_nodes.size(); i++){
+//        node a = leaf_nodes[i];
+//        for(int j = 0; j < leaf_nodes.size(); j++){
+//            node b  
+//        }  
+//    }
+//}
+
 //int main(int argc, char *argv[]){
 //    std::vector<node> G = readTree(argv[1]);
-//    std::vector<node> leaves = getLeafNodes(G);
-//for(int i = 0; i < leaves.size(); i++){
-//    std::cout << leaves[i].id << '\t';
-//}
+//    std::cout << G[1].id << '\t' << sumPath(G[1], G)<< std::endl;
 //   return 0;
 //}

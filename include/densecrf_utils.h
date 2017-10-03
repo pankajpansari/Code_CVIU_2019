@@ -86,6 +86,7 @@ float getObj_rhst(const MatrixXf & Q, const std::vector<node> &G);
 float doLineSearch_rhst(const MatrixXf & Qs, const MatrixXf & Q, int iter, float prevStep, const std::string filename);
 float getDeriv(const MatrixXf & Qs, const MatrixXf & Q, float step);
 float doLineSearch(const MatrixXf & Qs, const MatrixXf & Q, float rangeEnd = 1);
+float doLineSearch_rhst(const MatrixXf & Qs, const MatrixXf & Q, float rangeEnd, const std::vector<node> &G);
 float doLineSearch2(const MatrixXf & Qs, const MatrixXf & Q, int iter, float prevStep, std::string output_path);
 void getNegGradient(MatrixXf & negGrad, const MatrixXf & Q);
 void getNegGradient_rhst(MatrixXf & negGrad, const MatrixXf & Q, const std::vector<node> &G);

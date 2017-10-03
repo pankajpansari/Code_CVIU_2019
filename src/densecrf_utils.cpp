@@ -494,6 +494,38 @@ float doLineSearch(const MatrixXf & Qs, const MatrixXf & Q, float rangeEnd){
     return currentStep;
 }
 
+float doLineSearch_rhst(const MatrixXf & Qs, const MatrixXf & Q, float rangeEnd, const std::vector<node> &G){
+//rangeEnd default is 1
+    //do binary search for line search
+    float rangeStart = 0;
+
+    float currentStep = (rangeStart + rangeEnd)/2;
+    float candidateStep1 = 0, candidateStep2 = 0;
+    float obj1 = 0, obj2 = 0;
+
+    MatrixXf Q1 = MatrixXf::Zero(Q.rows(), Q.cols());
+    MatrixXf Q2 = MatrixXf::Zero(Q.rows(), Q.cols());
+
+    for(int binaryIter = 0; binaryIter <= 10; binaryIter++){	
+        candidateStep1 = (rangeStart + currentStep)/2;
+        candidateStep2 = (rangeEnd + currentStep)/2;
+
+        Q1 = (1 - candidateStep1)*Q + candidateStep1*Qs;
+        Q2 = (1 - candidateStep2)*Q + candidateStep2*Qs;
+
+        obj1 = getObj_rhst(Q1, G);
+        obj2 = getObj_rhst(Q2, G);
+
+        if(obj1 < obj2)
+            rangeEnd = currentStep;
+        else
+            rangeStart = currentStep;
+
+        currentStep = (rangeStart + rangeEnd)/2;
+
+    }
+    return currentStep;
+}
 float doLineSearch2(const MatrixXf & Qs, const MatrixXf & Q, int iter, float prevStep, std::string output_path){
 
     //do binary search for line search

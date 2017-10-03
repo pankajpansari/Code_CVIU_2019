@@ -40,7 +40,7 @@ int main(int argc, char *argv[]){
     crf.setPottsWeight(weight);
     
     //do inference
-    std::cout << "unary: " << argv[1] << " weight: " << std::to_string(int(weight)) << std::endl; 
-    std::string log_file = log_dir + "/submodular_log_w_" + std::to_string(int(weight)) + "_" + arg1;
+    std::cout << "unary: " << argv[1] << " weight: " << std::to_string(float(weight)) << std::endl; 
+    std::string log_file = log_dir + "/submodular_log_w_" + std::to_string(float(weight)) + "_" + arg1;
     crf.submodularFrankWolfe(unary, H, log_file);
 }
