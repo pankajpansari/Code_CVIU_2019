@@ -177,6 +177,17 @@ void SparseCRF::getConditionalGradient(MatrixXf &Qs, MatrixXf & Q, int grid_size
 	greedyAlgorithm(Qs, negGrad, grid_size);	
 }
 
+void SparseCRF::getConditionalGradient_rhst(MatrixXf &Qs, MatrixXf & Q, int grid_size, const std::vector<node> &G){
+    //current solution is the input matrix (in)
+    //conditional gradient is output
+
+	MatrixXf negGrad( M_, N_ );
+	getNegGradient_rhst(negGrad, Q, G); //negative gradient
+
+        Qs.fill(0);
+	greedyAlgorithm(Qs, negGrad, grid_size);	
+}
+
 void SparseCRF::submodularFrankWolfe(MatrixXf & init, int grid_size, std::string log_filename){
 
     //clock
