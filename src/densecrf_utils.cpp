@@ -743,6 +743,48 @@ float getObj_rhst2(const MatrixXf & Q, const std::string filename){
 //    }
 //    return currentStep;
 //}
+
+void getNegGradient_rhst(MatrixXf & negGrad, const MatrixXf & Q, const std::vector<node> &G){
+
+    //add up rows of Q corresponding to paths of leaves
+     
+    node root = getRoot(G);
+    std::vector<node> leaves = getLeafNodes(G);
+    int L = leaves.size();
+    int N = Q.cols();
+    MatrixXf Q_sum = MatrixXf::Zero(L, N); 
+    MatrixXf negGrad_label = MatrixXf::Zero(L, N); 
+
+    for(int i = 0; i < leaves.size(); i++){
+        std::vector<node> path = getPath(leaves[i]);
+        int leaf_id = leaves[i].id;
+        for(int j = 0; j < path.size(); j++)
+            Q_sum.row(leaf_id) += Q.row(path[j].id);
+    }
+    
+    //now same as getNegGradient()
+    float gradSum = 0;
+    for(int i = 0; i < N; i++){
+        gradSum = 0;
+        VectorXf b = Q_sum.col(i);
+        float minMarginal = b.minCoeff();
+        b.array() -= minMarginal;
+        b = (-b.array()).exp();
+        gradSum = b.sum();
+        b = b/gradSum;
+        negGrad_label.col(i) = b;
+    }
+
+
+    //share gradient values between labels and meta-labels lying on path
+     for(int i = 0; i < leaves.size(); i++){
+        std::vector<node> path = getPath(leaves[i]);
+        int leaf_id = leaves[i].id;
+        for(int j = 0; j < path.size(); j++)
+            negGrad.row(path[j].id) = negGrad_label.row(leaf_id);
+    }
+    
+}
 //void getNegGradient_rhst(MatrixXf & negGrad, const MatrixXf & Q, const std::string filename){
 //
 //    using namespace std;
