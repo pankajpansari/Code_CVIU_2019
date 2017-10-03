@@ -241,3 +241,60 @@ void SparseCRF::submodularFrankWolfe(MatrixXf & init, int grid_size, std::string
     }
     std::cout << "Upper bound = " << objVal << std::endl;
 }
+
+void SparseCRF::submodularFrankWolfe_tree(MatrixXf & init, int grid_size, std::string log_filename, const std::vector<node> &G){
+
+    //clock
+    typedef std::chrono::high_resolution_clock::time_point htime;
+    htime start, end;
+    double timing;
+    start = std::chrono::high_resolution_clock::now();
+
+    MatrixXf Q = MatrixXf::Zero(M_, N_); //current point 
+    MatrixXf Qs = MatrixXf::Zero(M_, N_);//conditional gradient
+    MatrixXf negGrad = MatrixXf::Zero( M_, N_ );
+
+    Q.block(0, 0, L_, N_) = init;
+
+    //log file
+    std::ofstream logFile;
+    logFile.open(log_filename);
+
+    float step = 0;
+    
+    float objVal = 0;
+
+    objVal = getObj_rhst(Q, G);
+
+    logFile << "0 " << objVal << " " << step << std::endl;
+
+    for(int k = 1; k <= 100; k++){
+
+      getNegGradient_rhst(negGrad, Q, G); //negative gradient
+
+      getConditionalGradient_rhst(Qs, Q, grid_size, G);
+
+      assert(checkNan(negGrad) && "negGrad has nan");
+      assert(checkNan(Qs) && "Qs has nan");
+      assert(checkNan(Q) && "Q has nan");
+
+      float fenchelGap = (Qs - Q).cwiseProduct(negGrad).sum();
+    
+      step = 2.0/(k + 2);
+//      step = doLineSearch(Qs, Q);
+
+      Q = Q + step*(Qs - Q); 
+
+      objVal = getObj_rhst(Q, G);
+
+    end = std::chrono::high_resolution_clock::now();
+    timing = std::chrono::duration_cast<std::chrono::duration<double>>(end-start).count();
+    
+      logFile << timing << '\t' << objVal << '\t' << step << std::endl;
+ //     std::cout << "Iter: " << k << " Obj = " << objVal << " Step size = " << step << " Gap = " << fenchelGap << std::endl;
+      std::cout << "Iter: " << k << " Obj = " << objVal << " Step size = " << step << " Time = " << timing << " Gap = " << fenchelGap << std::endl;
+//        if(fenchelGap < 1)
+//            break;
+    }
+    std::cout << "Upper bound = " << objVal << std::endl;
+}

@@ -109,22 +109,36 @@ void printLeafNodes(node parent)
     return;
 }
 
-std::vector<node> getLeafNodes(node parent)
+std::vector<node> getLeafNodes(const std::vector<node> &G)
 {
     //returns the list of leaves of the subtree with parent as the root
-    static std::vector<node> leaves;
+    std::vector<node> leaves;
     using namespace std;
-    if(parent.children.size() == 0){
-        leaves.push_back(parent);
-        return leaves;
-    }
-    else{
-        for(int i = 0; i < parent.children.size(); i++){
-            getLeafNodes(*parent.children[i]);
+    for(int i = 0; i < G.size(); i++){
+        if(G[i].children.size() == 0){
+            leaves.push_back(G[i]);
         }
-    }
+
+    } 
     return leaves;
 }
+
+//std::vector<node> getLeafNodes(node parent)
+//{
+//    //returns the list of leaves of the subtree with parent as the root
+//    static std::vector<node> leaves;
+//    using namespace std;
+//    if(parent.children.size() == 0){
+//        leaves.push_back(parent);
+//        return leaves;
+//    }
+//    else{
+//        for(int i = 0; i < parent.children.size(); i++){
+//            getLeafNodes(*parent.children[i]);
+//        }
+//    }
+//    return leaves;
+//}
 
 void checkLeafNodes(node parent, int M)
 {
@@ -241,23 +255,11 @@ Eigen::VectorXf getWeight(const std::vector<node> &G){
     return weight;
 }
 
-//jint main(int argc, char *argv[]){
-//j    std::vector<node> G = readTree(argv[1]);
-//j    node root = getRoot(G);
-//j    std::vector<node> leaves = getLeafNodes(root);
-//j    for(int i = 0; i < leaves.size(); i++){
-//j        std::cout << "Path of leaf " << leaves[i].id << std::endl;
-//j        std::vector<node> path = getPath(leaves[i]);
-//j        for(int j = 0; j < path.size(); j++){
-//j            std::cout << path[j].id << '\t';
-//j        }
-//j        std::cout << std::endl;
-//j    }
-//j//    int L = getNumLabels(G, 16);
-//j//    for(int i = 0; i < L; i++){
-//j//        getPath(G[i]);
-//j//    }
-//j//    int M = getNumMetaLabels(G);
-//j//    std::cout << getWeight(G) << std::endl;
-//j    return 0;
-//j}
+//int main(int argc, char *argv[]){
+//    std::vector<node> G = readTree(argv[1]);
+//    std::vector<node> leaves = getLeafNodes(G);
+//for(int i = 0; i < leaves.size(); i++){
+//    std::cout << leaves[i].id << '\t';
+//}
+//   return 0;
+//}
