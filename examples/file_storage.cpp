@@ -298,17 +298,26 @@ unsigned char * load_grayscale_image( const std::string & path_to_image, img_siz
     int down_height =  size.height/imskip;
 
     unsigned char * char_img = new unsigned char[down_width*down_height*3]();
-    for (int j=0; j < down_height; j++) {
-            for (int i=0; i < down_width; i++) {
+//    for (int j=0; j < down_height; j++) {
+//            for (int i=0; i < down_width; i++) {
+//                cv::Vec3b intensity = img.at<cv::Vec3b>(j*imskip,i*imskip); // this comes in BGR
+//                int ii = (int) i; 
+//                int jj = (int) j;
+////              assert((ii+jj*down_width)*3+2 < down_width*down_height*3);
+//                char_img[(ii+jj*down_width)*3+0] = intensity.val[0];
+//                char_img[(ii+jj*down_width)*3+1] = intensity.val[1];
+//                char_img[(ii+jj*down_width)*3+2] = intensity.val[2];
+//		}
+//    }
+    for (int i=0; i < down_width; i++) {
+        for (int j=0; j < down_height; j++) {
                 cv::Vec3b intensity = img.at<cv::Vec3b>(j*imskip,i*imskip); // this comes in BGR
-                int ii = (int) i; 
-                int jj = (int) j;
-//              assert((ii+jj*down_width)*3+2 < down_width*down_height*3);
-                char_img[(ii+jj*down_width)*3+0] = intensity.val[0];
-                char_img[(ii+jj*down_width)*3+1] = intensity.val[1];
-                char_img[(ii+jj*down_width)*3+2] = intensity.val[2];
+                char_img[(j+i*down_height)*3+0] = intensity.val[0];
+                char_img[(j+i*down_height)*3+1] = intensity.val[1];
+                char_img[(j+i*down_height)*3+2] = intensity.val[2];
 		}
     }
+
 
     return char_img;
 
@@ -407,7 +416,6 @@ void load_unary_synthetic(const std::string file_path, int nvar, int nlabel, Mat
 }
 
 MatrixXf load_unary_from_text(const std::string & path_to_unary, img_size& size, int imskip) {
-
     using namespace std;
     fstream myfile(path_to_unary.c_str(), std::ios_base::in);
     
@@ -419,47 +427,26 @@ MatrixXf load_unary_from_text(const std::string & path_to_unary, img_size& size,
     cout << "Number of variables = " << nvar << endl;
     cout << "Number of labels = " << nlabel << endl;
 
-    assert(("Number of variables should be positive" &&  newInput.nvar > 0));
-    assert(("Number of labels should be positive" && newInput.nlabel > 0));
+    assert(("Number of variables should be positive" &&  nvar > 0));
+    assert(("Number of labels should be positive" && nlabel > 0));
     
     myfile.get();
     
     MatrixXf unaries(nlabel, nvar);
 
     for(int variable_count = 0; variable_count < nvar; variable_count++){
-    	VectorXf unary_current_variable(nvar);
     	string line;
     	getline(myfile, line);
     	istringstream iss(line);
     	double unary;
         int unary_count = 0;
     	while(iss >> unary){
-    		unary_current_variable[unary_count] = unary;
+                unaries(unary_count, variable_count) = unary;
                 unary_count = unary_count + 1;
     	}
-
-        //note that unary file stored data in column-major format, but image read in row major format
-        //we are going to store unaries as row-major as well
-        int j = variable_count % size.height;
-        int i = variable_count/size.height;
-            
-        int row_major_var_count = j * size.width + i;
-        unaries.col(row_major_var_count) = unary_current_variable;
     }
- 
+    return unaries;
 
-   int down_width = (size.width/imskip);
-   int down_height = (size.height/imskip);
-
-   MatrixXf unaries_down(nlabel, down_width * down_height);
-
-    for(int i=0; i<down_height; ++i)
-       for(int j=0; j<down_width; ++j)
-		  for(int k=0; k< nlabel; ++k)
-                     unaries_down(k, i*down_width + j) = unaries(k, (i*down_width + j)*imskip);
-
-   return unaries_down;
-//   return unaries;
 }
 
 MatrixXf load_unary_rescaled( const std::string & path_to_unary, img_size& size, int imskip, int max_label) {
@@ -559,8 +546,10 @@ void save_map(const MatrixXf & estimates, const img_size & size, const std::stri
             intensity[1] = 255.0*labeling[i]/max_label;
             intensity[0] = 255.0*labeling[i]/max_label;
 
-            int col = i % size.width;
-            int row = (i - col)/size.width;
+//            int col = i % size.width;
+ //           int row = (i - col)/size.width;
+            int row = i % size.height;
+            int col = (i - row)/size.height;
             img.at<cv::Vec3b>(row, col) = intensity;
         }
 
@@ -574,8 +563,10 @@ void save_map(const MatrixXf & estimates, const img_size & size, const std::stri
             intensity[1] = 255.0*labeling[i]/max_label;
             intensity[0] = 255.0*labeling[i]/max_label;
 
-            int col = i % size.width;
-            int row = (i - col)/size.width;
+//            int col = i % size.width;
+ //           int row = (i - col)/size.width;
+            int row = i % size.height;
+            int col = (i - row)/size.height;
             img.at<cv::Vec3b>(row, col) = intensity;
         }
     } else {

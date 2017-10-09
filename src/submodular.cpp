@@ -107,11 +107,11 @@ MatrixXf DenseCRF::submodular_inference_dense( MatrixXf & init, int width, int h
     logFile << "0 " << objVal << " " <<  duration << " " << step << std::endl;
   //  std::cout << "Iter: 0   Obj value = " << objVal << "  Step size = 0    Time = 0s" << std::endl;
 
-    for(int k = 1; k <= 500; k++){
+    for(int k = 1; k <= 10; k++){
 
       getConditionalGradient(Qs, Q);
 
-      step = doLineSearch(Qs, Q, 1e-5);
+      step = doLineSearch(Qs, Q, 1);
 
       Q = Q + step*(Qs - Q); 
 
@@ -124,7 +124,7 @@ MatrixXf DenseCRF::submodular_inference_dense( MatrixXf & init, int width, int h
       std::cout << "Iter: " << k << " Obj = " << objVal << " Time = " <<  duration << " Step size = " << step << std::endl;
 
       
-      if(k % 50 == 0){
+      if(k % 10 == 0){
             //name the segmented image and Q files
                 std::string img_file_extn = "_" + std::to_string(k) + ".png";
                 image_output = output_path;
