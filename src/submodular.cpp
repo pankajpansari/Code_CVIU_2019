@@ -68,19 +68,18 @@ void DenseCRF::greedyAlgorithm(MatrixXf &out, MatrixXf &grad){
 }
 
 
-MatrixXf DenseCRF::submodular_inference_dense( MatrixXf & init, int width, int height, std::string output_path, std::string dataset_name){
+MatrixXf DenseCRF::submodularFrankWolfe_Potts( MatrixXf & init, int width, int height, std::string output_path, std::string dataset_name){
 
-    MatrixXf Q( M_, N_ ), Qs( M_, N_), temp(M_, N_); //Q is the current point, Qs is the conditional gradient
+    MatrixXf Q = MatrixXf::Zero(M_, N_); //current point 
+    MatrixXf Qs = MatrixXf::Zero(M_, N_);//conditional gradient
+    MatrixXf negGrad = MatrixXf::Zero( M_, N_ );
 
     MatrixP dot_tmp(M_, N_);
-
-//    std::cout << "M_ = " << M_ << " N_ = " << N_ << std::endl;
-    MatrixXf Qs_bf = MatrixXf::Zero(M_, N_);
-    MatrixXf negGrad = MatrixXf::Zero( M_, N_ );
+    MatrixXf temp(M_, N_); //current point 
 
     Q = init;	//initialize to unaries
 
-    float step = 0.001;
+    float step = 0;
     img_size size;
     size.width = width;
     size.height = height;
@@ -93,19 +92,16 @@ MatrixXf DenseCRF::submodular_inference_dense( MatrixXf & init, int width, int h
 
     //image file
     std::string image_output = output_path;
-    std::string Q_output = output_path;
 
     clock_t start;
     float duration = 0;
-    float scale = 0;
-    float Qs_sum = 0;
     float dualGap = 0;
     float objVal = 0;
+
     start = clock();
 
     objVal = getObj(Q);
     logFile << "0 " << objVal << " " <<  duration << " " << step << std::endl;
-  //  std::cout << "Iter: 0   Obj value = " << objVal << "  Step size = 0    Time = 0s" << std::endl;
 
     for(int k = 1; k <= 10; k++){
 
@@ -128,7 +124,6 @@ MatrixXf DenseCRF::submodular_inference_dense( MatrixXf & init, int width, int h
             //name the segmented image and Q files
                 std::string img_file_extn = "_" + std::to_string(k) + ".png";
                 image_output = output_path;
-                Q_output = output_path;
                 image_output.replace(image_output.end()-4, image_output.end(), img_file_extn);
                 
              //save segmentation
@@ -139,6 +134,7 @@ MatrixXf DenseCRF::submodular_inference_dense( MatrixXf & init, int width, int h
    }
 
    logFile.close();
+
    //convert Q to marginal probabilities
    MatrixXf marginal(M_, N_);
    expAndNormalize(marginal, -Q); 

@@ -36,7 +36,7 @@ public:
     
     Eigen::MatrixXf getUnary();
 
-    void submodularFrankWolfe(Eigen::MatrixXf & init, int grid_size, std::string log_filename);
+    void submodularFrankWolfe_Potts(Eigen::MatrixXf & init, int grid_size, std::string log_filename);
 
     void submodularFrankWolfe_tree(Eigen::MatrixXf & init, int grid_size, std::string log_filename,  const std::vector<node> &G);
 

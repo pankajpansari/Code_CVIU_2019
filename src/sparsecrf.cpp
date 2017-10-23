@@ -188,7 +188,7 @@ void SparseCRF::getConditionalGradient_rhst(MatrixXf &Qs, MatrixXf & Q, int grid
 	greedyAlgorithm(Qs, negGrad, grid_size);	
 }
 
-void SparseCRF::submodularFrankWolfe(MatrixXf & init, int grid_size, std::string log_filename){
+void SparseCRF::submodularFrankWolfe_Potts(MatrixXf & init, int grid_size, std::string log_filename){
 
     //clock
     typedef std::chrono::high_resolution_clock::time_point htime;
