@@ -118,12 +118,13 @@ float computeGaussianWeight(const VectorXf & feature_a, const VectorXf & feature
 void getSubmodFnVal(int j, int i, MatrixXf &unary);
 void compareWithBf(MatrixXf &pairwise_filter, MatrixXf & grad);
 MatrixXf submodularFrankWolfe_Potts(MatrixXf & init, int width, int height, std::string output_path, std::string dataset_name);
-//MatrixXf submodularFrankWolfe_tree(MatrixXf & init, int width, int height, std::string output_path, std::string tree_file, std::string dataset_name);
+MatrixXf submodularFrankWolfe_tree(MatrixXf & init, int width, int height, std::string output_path, std::string dataset_name, const std::vector<node> &G);
 void getConditionalGradient(MatrixXf & Qs, MatrixXf & Q);
-void getConditionalGradient_rhst(MatrixXf &Qs, MatrixXf & Q, const std::string filename, const MatrixXf &unary_meta);
+void getConditionalGradient_tree(MatrixXf &Qs, MatrixXf & Q, const std::vector<node> &G);
 MatrixXf getFeatureMat(const unsigned char* im);
 //void greedyAlgorithmBruteForce(MatrixXf & Qs, MatrixXf &Q);
 void greedyAlgorithm(MatrixXf &out, MatrixXf &grad);
+void greedyAlgorithm_tree(MatrixXf &out, MatrixXf &grad,  const std::vector<node> &G);
 void greedyAlgorithm_bf(MatrixXf &out, MatrixXf &grad);
 void greedyAlgorithm_dc(MatrixXf &out, MatrixXf &grad);
 void applyBruteForce(MatrixXf & Qs, MatrixXf &Q);

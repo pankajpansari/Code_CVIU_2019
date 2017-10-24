@@ -32,6 +32,7 @@ float pick_lambda_eig_to_concave(const MatrixXf & lbl_compatibility);
 
 // mf-utils //
 void expAndNormalize( MatrixXf & out, const MatrixXf & in);
+void expAndNormalize_tree( MatrixXf & out, const MatrixXf & in, const std::vector<node> &G);
 
 // dc-neg-utils //
 void kkt_solver(const VectorXf & lin_part, const MatrixXf & inv_KKT, VectorXf & out);

@@ -103,7 +103,7 @@ MatrixXf DenseCRF::submodularFrankWolfe_Potts( MatrixXf & init, int width, int h
     objVal = getObj(Q);
     logFile << "0 " << objVal << " " <<  duration << " " << step << std::endl;
 
-    for(int k = 1; k <= 10; k++){
+    for(int k = 1; k <= 100; k++){
 
       getConditionalGradient(Qs, Q);
 

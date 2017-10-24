@@ -506,7 +506,7 @@ float doLineSearch_rhst(const MatrixXf & Qs, const MatrixXf & Q, float rangeEnd,
     MatrixXf Q1 = MatrixXf::Zero(Q.rows(), Q.cols());
     MatrixXf Q2 = MatrixXf::Zero(Q.rows(), Q.cols());
 
-    for(int binaryIter = 0; binaryIter <= 10; binaryIter++){	
+    for(int binaryIter = 0; binaryIter <= 13; binaryIter++){	
         candidateStep1 = (rangeStart + currentStep)/2;
         candidateStep2 = (rangeEnd + currentStep)/2;
 
@@ -620,41 +620,30 @@ void getNegGradient(MatrixXf & negGrad, const MatrixXf & Q){
 /////////////////////////////
 
 
-void getMarginals_rhst(MatrixXf & out, const MatrixXf & in, const std::string filename){
-
-    using namespace std;
-    ifstream treefile(filename);
-    string s;
-
-    getline(treefile, s);
-    istringstream ss(s);
-
+void expAndNormalize_tree(MatrixXf & out, const MatrixXf & in, const std::vector<node> &G){
+    //add up rows of in corresponding to paths of leaves
+    node root = getRoot(G);
+    std::vector<node> leaves = getLeafNodes(G);
+    int L = leaves.size();
     int N = in.cols();
-    int M, L;
-    ss >> M >> L;
-
-    //in to in_L
-    //for each leaf node in in_L, sum up rows of in corresponding to path nodes of that leaf
-    MatrixXf in_leaf = MatrixXf::Zero(L, N); 
-    int leaf, temp;
-    for(int i = 0; i < L; i++){
-        getline(treefile, s);
-        istringstream ss(s);
-        ss >> leaf;
-        while(ss >> temp){
-            in_leaf.row(leaf) += in.row(temp);
-        }   
+    MatrixXf in_sum = MatrixXf::Zero(L, N); 
+    for(int i = 0; i < leaves.size(); i++){
+        std::vector<node> path = getPath(leaves[i]);
+        int leaf_id = leaves[i].id;
+        for(int j = 0; j < path.size(); j++){
+//            std::cout << "leaf = " << leaf_id << " path id = " << path[j].id << std::endl; 
+            in_sum.row(leaf_id) += in.row(path[j].id);
+        }
     }
 
-    //in_leaf to m
-    //just take neg exp
-    MatrixXf mMat = (-in_leaf).array().exp();
-    out.resize(L, N);
-    for(int i = 0; i < out.cols(); i++){
-        VectorXf b = in_leaf.col(i);
-        b = b.array() - b.minCoeff();
-        b = (-b).array().exp();
-        out.col(i) = b.array()/b.sum();
+      assert(checkNan(in_sum) && "in_sum has nan");
+
+    out.resize( L, in.cols() );
+    for( int i=0; i<out.cols(); i++ ){
+        VectorXf b = in_sum.col(i);
+        b.array() -= b.maxCoeff();
+        b = b.array().exp();
+        out.col(i) = b / b.array().sum();
     }
 } 
 

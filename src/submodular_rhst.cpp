@@ -14,130 +14,116 @@
 #include "file_storage.hpp"
 #include <assert.h>
 
-void DenseCRF::getConditionalGradient_rhst(MatrixXf &Qs, MatrixXf & Q, const std::string filename, const MatrixXf &unary_meta){
+void DenseCRF::getConditionalGradient_tree(MatrixXf &Qs, MatrixXf & Q, const std::vector<node> &G){
 
-    using namespace std;
-    M_ = Q.rows(); 
-    int nMeta = Q.rows();
-    int nvar = Q.cols();
+        M_ = Q.rows();
+        N_ = Q.cols();
 
-    //get unaries
-    MatrixXf negGrad = MatrixXf::Zero( nMeta, nvar);
-    getNegGradient_rhst(negGrad, Q, filename); //negative gradient
-    //get pairwise
-    MatrixXf pairwise = MatrixXf::Zero(nMeta, nvar);
-    applyFilter_rhst(pairwise, negGrad);
-   
-    //applyBruteForce(pairwise, negGrad);
+	MatrixXf negGrad( M_, N_ );
+	getNegGradient_rhst(negGrad, Q, G); //negative gradient
 
-    int nLabel, temp;
-    float node_weight;
-    ifstream treefile(filename);
-    string s;
-
-    getline(treefile, s);
-    istringstream ss(s);
-    ss >> temp >> nLabel;
-    for(int i = 0; i < nMeta + nLabel; i++){
-        getline(treefile, s);
-    }
-    for(int i = 0; i < nMeta; i++){
-        getline(treefile, s);
-        istringstream ss(s);
-        ss >> temp >> node_weight;
-        pairwise.row(temp) = pairwise.row(temp).array() * node_weight;
-    }
-    Qs = unary_meta - pairwise;
+        Qs.fill(0);
+	greedyAlgorithm_tree(Qs, negGrad, G);	
 }
 
-MatrixXf DenseCRF::submodular_inference_rhst( MatrixXf & init, int width, int height, std::string output_path, std::string tree_file, std::string dataset_name){
+void DenseCRF::greedyAlgorithm_tree(MatrixXf &out, MatrixXf &grad,  const std::vector<node> &G){
 
-    std::cout << "submodular inference starting" << std::endl;
-    std::string filename = tree_file;
-    std::ifstream treefile(filename);
-    std::string s;
+    //negative gradient at current point is input
+    //LP solution is the output
 
-    std::getline(treefile, s);
-    std::istringstream ss(s);
-
-    int nMeta, nLabel;
-    ss >> nMeta >> nLabel;
-
-    std::cout << "nMeta = " << nMeta << "       nLabel = " << nLabel << "       N_ = " << N_ << std::endl;
-
-    MatrixXf Lmarg = MatrixXf::Zero(nMeta, N_); //Lmarg for log marginals
-    MatrixXf Lmargs = MatrixXf::Zero(nMeta, N_);
-    MatrixXf temp = MatrixXf::Zero(nMeta, N_);
-    MatrixXf Lmargs_bf = MatrixXf::Zero(nMeta, N_);
-    MatrixXf negGrad = MatrixXf::Zero( nMeta, N_ );
-    MatrixXf unary_meta = MatrixXf::Zero( nMeta, N_ );
+    out.fill(0);
+    //get unaries
+    MatrixXf unary = unary_->get();   
     
-    MatrixXf marginal(nLabel, N_);
-    MatrixXf labelLmarg(nLabel, N_);
+    //get pairwise
+    MatrixXf pairwise = MatrixXf::Zero(M_, N_);
+    
+    clock_t start = std::clock();
+    double duration = 0;
+    applyFilter(pairwise, grad);
+
+    Eigen::VectorXf  weightVec = getWeight(G);
+
+   for(int i = 0; i < pairwise.rows(); i++){
+        pairwise.row(i) = pairwise.row(i).array() * weightVec[i];
+   } 
+
+    out = unary - pairwise; //-ve because original code makes use of negative Potts potential (in labelcompatibility.cpp), but we want to use positive weights
+}
+
+MatrixXf DenseCRF::submodularFrankWolfe_tree( MatrixXf & init, int width, int height, std::string output_path, std::string dataset_name, const std::vector<node> &G){
+//M_ is number of meta-labels and L is number of labels
+
+    MatrixXf Q = MatrixXf::Zero(M_, N_); //current point 
+    MatrixXf temp = MatrixXf::Zero(M_, N_);
+    MatrixXf Qs = MatrixXf::Zero(M_, N_);//conditional gradient
+
+    MatrixP dot_tmp(M_, N_);
+
+    node root = getRoot(G);
+    std::vector<node> leaves = getLeafNodes(G);
+    int L = leaves.size();
+ 
+    Q.block(0, 0, L, N_) = init;
+
+    float step = 0;
+    img_size size;
+    size.width = width;
+    size.height = height;
+
     //log file
     std::string log_output = output_path;
     log_output.replace(log_output.end()-4, log_output.end(),"_log.txt");
     std::ofstream logFile;
     logFile.open(log_output);
-    //
+
     //image file
     std::string image_output = output_path;
-    std::string Q_output = output_path;
-
-    img_size size;
-    size.width = width;
-    size.height = height;
-
-    if(init.rows() != nLabel)
-        std::cerr << "#rows of unary and nLabel different" << std::endl; 
-    assert(init.rows() == nLabel); 
-    assert(1 == 2); 
-    assert(init.cols() == N_);
-    
-    unary_meta.block(0, 0, nLabel, N_) = init.block(0, 0, nLabel, N_);	 //augment unaries to have meta-labels as well (0 potentials)
-    Lmarg = unary_meta;     //initialize to unaries
-    float step = 0.001;
 
     clock_t start;
     float duration = 0;
+    float dualGap = 0;
     float objVal = 0;
+
     start = clock();
 
-    objVal = getObj_rhst(Lmarg, filename);
-    std::cout << "Iter: 0   Obj value = " << objVal << "  Step size = 0    Time = 0s" << std::endl;
+    objVal = getObj_rhst(Q, G);
+    logFile << "0 " << objVal << " " <<  duration << " " << step << std::endl;
 
-    logFile << "0 " << " " << objVal << " " <<  duration << " " << step << std::endl;
     for(int k = 1; k <= 100; k++){
 
-      getConditionalGradient_rhst(Lmargs, Lmarg, filename, unary_meta);
+      getConditionalGradient_tree(Qs, Q, G);
 
-      step = doLineSearch_rhst(Lmargs, Lmarg, k, step, filename);
+      step = doLineSearch_rhst(Qs, Q, 1, G);
 
-      Lmarg = Lmarg + step*(Lmargs - Lmarg); 
+      Q = Q + step*(Qs - Q); 
 
       duration = (clock() - start ) / (double) CLOCKS_PER_SEC;
 
-      objVal = getObj_rhst(Lmarg, filename);
+     objVal = getObj_rhst(Q, G);
 
+      //write to log file
+      logFile << k << " " << objVal << " " <<  duration << " " << step << std::endl;
+      std::cout << "Iter: " << k << " Obj = " << objVal << " Time = " <<  duration << " Step size = " << step << std::endl;
+      
       if(k % 10 == 0){
-                //name the segmented image and Q files
+            //name the segmented image and Q files
                 std::string img_file_extn = "_" + std::to_string(k) + ".png";
                 image_output = output_path;
                 image_output.replace(image_output.end()-4, image_output.end(), img_file_extn);
-                //save segmentation
-                getMarginals_rhst(marginal, Lmarg, filename); 
-                save_map(marginal, size, image_output, dataset_name);
+                
+             //save segmentation
+               expAndNormalize_tree(temp, -Q, G);
+               save_map(temp, size, image_output, dataset_name);
 
       }
-      std::cout << "Iter: " << k << " Obj = " << objVal << " Time = " <<  duration << " Step size = " << step << std::endl;
-      logFile << k << " " << objVal << " " <<  duration << " " << step << std::endl;
-      }
+   }
 
-   getMarginals_rhst(marginal, Lmarg, filename); 
+   logFile.close();
 
-   std::string marg_file = output_path;
-   marg_file.replace(marg_file.end()-4, marg_file.end(), "_marginals.txt");
-   save_matrix(marg_file, marginal, size);
+   //convert Q to marginal probabilities
+   MatrixXf marginal(M_, N_);
+   expAndNormalize_tree(marginal, -Q, G);
+
    return marginal;
-
 }
