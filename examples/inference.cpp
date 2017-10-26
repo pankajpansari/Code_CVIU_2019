@@ -13,33 +13,33 @@ void image_inference(std::string image_file, std::string unary_file, std::string
             float bil_spcstd, float bil_colstd, float bil_potts)
 {
     img_size size = {-1, -1};
-
-       MatrixXf unaries;    
-       unsigned char * img;
       
     /*if rescaling*/
-    int imskip = 1;
-    img = load_rescaled_image(image_file, size, imskip);
+   unsigned char * img;
+    img = load_rescaled_image(image_file, size, 1);
     std::cout << "Image loaded" << std::endl;
-      if(dataset_name == "MSRC"){
-            unaries = load_unary_rescaled(unary_file, size, imskip);
-        }else if (dataset_name == "Stereo_special" || dataset_name == "Denoising"){
-          unaries = load_unary_from_text(unary_file, size, imskip);
-    }
-    
-    size.height = size.height/imskip;
-    size.width = size.width/imskip;
 
-    getdim(unaries);
-   
-    std::cout << "Unaries max = " << unaries.maxCoeff() << "    min = " << unaries.minCoeff() << std::endl;
-    std::cout << "Unaries size = " << unaries.rows() << "x" << unaries.cols() << std::endl; 
-    std::cout << "Unaries loaded" << std::endl;
+       MatrixXf unaries;    
+      if(dataset_name == "MSRC"){
+            unaries = load_unary_rescaled(unary_file, size, 1);
+        }else if (dataset_name == "Stereo_special" || dataset_name == "Denoising"){
+          unaries = load_unary_from_text(unary_file, size, 1);
+    }
+
+    std::vector<node> G;
+    if(method == "submod_tree"){
+        G = readTree(tree_file);
+        int M = getNumMetaLabels(G);
+        int L = getNumLabels(G);
+        MatrixXf unary_temp = Eigen::MatrixXf::Zero(M, unaries.cols());
+        unary_temp.block(0, 0, L, unaries.cols()) = unaries;
+        unaries = unary_temp; 
+    }
 
     DenseCRF2D crf(size.width, size.height, unaries.rows());
     crf.setUnaryEnergy(unaries);
     if(method == "mf_tree"){
-        std::vector<node> G = readTree(tree_file);
+        G = readTree(tree_file);
         std::cout << "using mf tree" << std::endl;
         MatrixXf m = getPairwiseTable(G);
         crf.addPairwiseGaussian(spc_std, spc_std, new MatrixCompatibility(m.array()*spc_potts));
@@ -52,7 +52,7 @@ void image_inference(std::string image_file, std::string unary_file, std::string
                              bil_colstd, bil_colstd, bil_colstd,
                              img, new PottsCompatibility(bil_potts));
     }
-    MatrixXf Q;
+
     std::size_t found = image_file.find_last_of("/\\");
     std::string image_name = image_file.substr(found+1);
     found = image_name.find_last_of(".");
@@ -68,11 +68,10 @@ void image_inference(std::string image_file, std::string unary_file, std::string
     std::vector<int> pixel_ids;
     start = std::chrono::high_resolution_clock::now();
 
-    Q = crf.unary_init();
+    MatrixXf Q = crf.unary_init();
 
     double initial_discretized_energy = crf.assignment_energy_true(crf.currentMap(Q));
     std::cout << "Initial energy = " << initial_discretized_energy << std::endl;
-
 
     if (method == "mf5") {
         std::cout << "Starting mf inference " << std::endl;
@@ -84,6 +83,10 @@ void image_inference(std::string image_file, std::string unary_file, std::string
         std::cout << "Starting submod inference " << std::endl;
         Q = unaries;
         Q = crf.submodularFrankWolfe_Potts(Q, size.width, size.height, output_path, dataset_name);
+   } else if (method == "submod_tree") {
+        std::cout << "Starting submod inference " << std::endl;
+        Q = unaries;
+        Q = crf.submodularFrankWolfe_tree(Q, size.width, size.height, output_path, dataset_name, G);
    } else if (method == "unary") {
         (void)0;
     } else {
@@ -113,7 +116,6 @@ void image_inference(std::string image_file, std::string unary_file, std::string
    std::string marg_file = output_path;
    marg_file.replace(marg_file.end()-4, marg_file.end(), "_marginals.txt");
    save_matrix(marg_file, Q, size);
- 
 }
 
 int main(int argc, char* argv[]) 
