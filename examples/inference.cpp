@@ -5,10 +5,11 @@
 #include <vector>
 #include "densecrf.h"
 #include "file_storage.hpp"
+#include "tree_utils.h"
+
 using namespace Eigen;
 
-void image_inference(std::string image_file, std::string unary_file, std::string dataset_name, 
-            std::string method, std::string results_path, float spc_std, float spc_potts, 
+void image_inference(std::string image_file, std::string unary_file, std::string tree_file, std::string dataset_name, std::string method, std::string results_path, float spc_std, float spc_potts, 
             float bil_spcstd, float bil_colstd, float bil_potts)
 {
     img_size size = {-1, -1};
@@ -37,11 +38,20 @@ void image_inference(std::string image_file, std::string unary_file, std::string
 
     DenseCRF2D crf(size.width, size.height, unaries.rows());
     crf.setUnaryEnergy(unaries);
-    crf.addPairwiseGaussian(spc_std, spc_std, new PottsCompatibility(spc_potts));
-    crf.addPairwiseBilateral(bil_spcstd, bil_spcstd,
+    if(method == "mf_tree"){
+        std::vector<node> G = readTree(tree_file);
+        std::cout << "using mf tree" << std::endl;
+        MatrixXf m = getPairwiseTable(G);
+        crf.addPairwiseGaussian(spc_std, spc_std, new MatrixCompatibility(m.array()*spc_potts));
+        crf.addPairwiseBilateral(bil_spcstd, bil_spcstd,
+                             bil_colstd, bil_colstd, bil_colstd,
+                             img, new MatrixCompatibility(m.array()*bil_potts));
+    } else{
+        crf.addPairwiseGaussian(spc_std, spc_std, new PottsCompatibility(spc_potts));
+        crf.addPairwiseBilateral(bil_spcstd, bil_spcstd,
                              bil_colstd, bil_colstd, bil_colstd,
                              img, new PottsCompatibility(bil_potts));
-
+    }
     MatrixXf Q;
     std::size_t found = image_file.find_last_of("/\\");
     std::string image_name = image_file.substr(found+1);
@@ -67,7 +77,7 @@ void image_inference(std::string image_file, std::string unary_file, std::string
     if (method == "mf5") {
         std::cout << "Starting mf inference " << std::endl;
         Q = crf.mf_inference(Q, 5, output_path, dataset_name);
-    } else if (method == "mf") {
+    } else if (method == "mf" || method == "mf_tree") {
         std::cout << "Starting mf inference " << std::endl;
         Q = crf.mf_inference(Q, output_path, dataset_name);
     } else if (method == "submod") {
@@ -109,18 +119,21 @@ void image_inference(std::string image_file, std::string unary_file, std::string
 int main(int argc, char* argv[]) 
 {
     // set input, output paths and method
+    assert(argc == 12 && "All arguments not given");
     std::string image_file = argv[1];
     std::string unary_file = argv[2];
-    std::string method = argv[3];
-    std::string results_path = argv[4];
+    std::string tree_file = argv[3];
+    std::string method = argv[4];
+    std::string results_path = argv[5];
 
-    std::string dataset_name = argv[5];
+    std::string dataset_name = argv[6];
 
-     float  spc_std = std::stof(argv[6]);
-     float  spc_potts = std::stof(argv[7]);
-     float  bil_spcstd = std::stof(argv[8]);
-     float  bil_colstd = std::stof(argv[9]);
-     float  bil_potts = std::stof(argv[10]);
+     float  spc_std = std::stof(argv[7]);
+     float  spc_potts = std::stof(argv[8]);
+     float  bil_spcstd = std::stof(argv[9]);
+     float  bil_colstd = std::stof(argv[10]);
+     float  bil_potts = std::stof(argv[11]);
+
 
     std::cout << "#COMMAND: " << argv[0] << " " << image_file << " " << unary_file << " " << method << " " 
         << results_path << " " << dataset_name << " " << spc_std << " " << spc_potts << " " << bil_spcstd << " "
@@ -128,9 +141,10 @@ int main(int argc, char* argv[])
 
    LP_inf_params lp_params;
 
-   image_inference(image_file, unary_file, dataset_name, method, results_path, spc_std, spc_potts, 
+   image_inference(image_file, unary_file, tree_file, dataset_name, method, results_path, spc_std, spc_potts, 
             bil_spcstd, bil_colstd, bil_potts);
 
     return 0;
+
 }
 
