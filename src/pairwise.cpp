@@ -213,7 +213,7 @@ void PairwisePotential::applyTranspose(MatrixXf & out, const MatrixXf & Q) const
 void PairwisePotential::apply_upper_minus_lower_ord(MatrixXf & out, const MatrixXf & Q) const {
 	assert(Q.maxCoeff() <= 1);
 	assert(Q.minCoeff() >= 0);  // values truncated to be [0,1], doesn't need to sum to 1
-    out.fill(0);
+        out.fill(0);
 	kernel_->apply_upper_minus_lower_ord(out, Q);
 	
 	// Apply the compatibility

@@ -171,7 +171,7 @@ MatrixXf DenseCRF::mf_inference ( const MatrixXf & init, int n_iterations , std:
 
     for( int it=0; it<n_iterations; it++ ) {
         tmp1 = -unary;
-        for( unsigned int k=0; k<pairwise_.size(); k++ ) {
+        for( unsigned int k=0; k<pairwise_.size(); k++) {
             pairwise_[k]->apply( tmp2, Q );
             tmp1 -= tmp2;
         }

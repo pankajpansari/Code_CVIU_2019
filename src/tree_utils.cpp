@@ -111,7 +111,7 @@ void printLeafNodes(node parent)
 
 std::vector<node> getLeafNodes(const std::vector<node> &G)
 {
-    //returns the list of leaves of the subtree with parent as the root
+    //returns the list of all the leaves of the tree
     std::vector<node> leaves;
     using namespace std;
     for(int i = 0; i < G.size(); i++){
@@ -123,22 +123,21 @@ std::vector<node> getLeafNodes(const std::vector<node> &G)
     return leaves;
 }
 
-//std::vector<node> getLeafNodes(node parent)
-//{
-//    //returns the list of leaves of the subtree with parent as the root
-//    static std::vector<node> leaves;
-//    using namespace std;
-//    if(parent.children.size() == 0){
-//        leaves.push_back(parent);
-//        return leaves;
-//    }
-//    else{
-//        for(int i = 0; i < parent.children.size(); i++){
-//            getLeafNodes(*parent.children[i]);
-//        }
-//    }
-//    return leaves;
-//}
+void getSubtreeLeafNodes(node parent, std::vector<node>* leaves, const std::vector<node> &G)
+{
+    //returns the list of leaves of the subtree with parent as the root
+
+//  static std::vector<node> leaves;
+    using namespace std;
+    if(parent.children.size() == 0){
+        (*leaves).push_back(parent);
+    }
+    else{
+        for(int i = 0; i < parent.children.size(); i++){
+            getSubtreeLeafNodes(*parent.children[i], leaves, G);
+        }
+    }
+}
 
 void checkLeafNodes(node parent, int M)
 {
@@ -255,30 +254,79 @@ Eigen::VectorXf getWeight(const std::vector<node> &G){
     return weight;
 }
 
-float sumPath(node t, const std::vector<node> &G){
+float sumPath(node t, node s, const std::vector<node> &G){
+    //adds up the edge weights on the upward path from t to s
+    //assuming that s lies on path from root to t
     float edgeSum = 0;
-    node root = getRoot(G);
-    while(t.id != root.id){
+    while(t.id != s.id){
         edgeSum += t.weight;
         t = *t.parent;
     }
     return edgeSum;
 }
 
-//void printPairwiseTable(const std::vector<node> &G){
-////print hierarchical Potts penalty among labels
-////used for matlab trw
-//    vector<node> leaf_nodes = getLeafNodes(G);
-//    for(int i = 0; i < leaf_nodes.size(); i++){
-//        node a = leaf_nodes[i];
-//        for(int j = 0; j < leaf_nodes.size(); j++){
-//            node b  
-//        }  
-//    }
-//}
+Eigen::MatrixXf getPairwiseTable(const std::vector<node> &G){
+//print hierarchical Potts penalty among labels
+//used for matlab trw
+    std::vector<node> leaf_nodes = getLeafNodes(G);
+    std::vector<node> sub_leaves;
+    int L = getNumLabels(G);
+    Eigen::MatrixXf compatibility_mat = Eigen::MatrixXf::Zero(L, L);
+    node p;
+    float ab_distance = 0;
+    int break_flag = 0;
+    for(int i = 0; i < leaf_nodes.size(); i++){
+        node s = leaf_nodes[i];
+//        std::cout << "s.id = " << s.id << std::endl;
+        for(int j = 0; j < leaf_nodes.size(); j++){
+            ab_distance = 0;
+            node t = leaf_nodes[j];
+            if(t.id == s.id){
+                ab_distance = 0;
+            }
+ //           std::cout << "t.id = " << t.id << std::endl;
+            else{
+            p = s;
+            break_flag = 0;
+            sub_leaves.clear();
+            while(true){
+               ab_distance += p.weight;
+ //           std::cout << "p.weight = " << p.weight << std::endl;
+               p = *p.parent; 
+               getSubtreeLeafNodes(p, &sub_leaves, G);
+               for(int k = 0; k < sub_leaves.size(); k++){
+                    if(sub_leaves[k].id == t.id)
+                        break_flag = 1;  
+                }
+                if(break_flag == 1)
+                    break;
+            }
+  //  std::cout << "break" << std::endl;
+            p = t;
+            break_flag = 0;
+            sub_leaves.clear();
+            while(true){
+               ab_distance += p.weight;
+   //         std::cout << "p.weight = " << p.weight << std::endl;
+               p = *p.parent; 
+               getSubtreeLeafNodes(p, &sub_leaves, G);
+               for(int k = 0; k < sub_leaves.size(); k++){
+                   if(sub_leaves[k].id == s.id)
+                       break_flag = 1;  
+               }
+               if(break_flag == 1)
+                   break;
+            }
+            }
+            compatibility_mat(s.id, t.id) = ab_distance;
+        }  
+    }
+    return compatibility_mat;
+}
 
 //int main(int argc, char *argv[]){
 //    std::vector<node> G = readTree(argv[1]);
-//    std::cout << G[1].id << '\t' << sumPath(G[1], G)<< std::endl;
-//   return 0;
+//    Eigen::MatrixXf m = getPairwiseTable(G);
+//    std::cout << m << std::endl;
+//    return 0;
 //}

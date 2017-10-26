@@ -495,7 +495,7 @@ float doLineSearch(const MatrixXf & Qs, const MatrixXf & Q, float rangeEnd){
 }
 
 float doLineSearch_rhst(const MatrixXf & Qs, const MatrixXf & Q, float rangeEnd, const std::vector<node> &G){
-//rangeEnd default is 1
+    //rangeEnd default is 1
     //do binary search for line search
     float rangeStart = 0;
 
