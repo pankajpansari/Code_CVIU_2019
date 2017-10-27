@@ -422,7 +422,7 @@ MatrixXf load_unary_from_text(const std::string & path_to_unary, img_size& size,
     
     int nvar = 0, nlabel = 0, temp = 0;
     
-    myfile >> nvar >> nlabel >> temp >> temp;
+    myfile >> nvar >> nlabel;
     
     cout << "Parameters of the input file:" << endl << endl;
     cout << "Number of variables = " << nvar << endl;
