@@ -43,10 +43,7 @@ int main(int argc, char *argv[]){
     //do inference
     std::cout << "unary: " << argv[1] << " weight: " << std::to_string(float(weight)) << std::endl; 
     std::string log_file = log_dir + "/submodular_log_w_" + std::to_string(float(weight)) + "_" + arg1;
-    if(good == 1)
-        log_file = log_dir + "/submodular_log_w_" + std::to_string(float(weight)) + "_good_" + arg1;
-    else
-        log_file = log_dir + "/submodular_log_w_" + std::to_string(float(weight)) + "_bad_" + arg1;
+        log_file = log_dir + "/submodular_log_w_" + std::to_string(float(weight)) + "_" + std::to_string(good) + "_" + arg1;
 
     crf.submodularFrankWolfe_Potts(unary, H, log_file, good);
 

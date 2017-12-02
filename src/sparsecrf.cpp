@@ -467,7 +467,7 @@ void SparseCRF::submodularFrankWolfe_Potts(MatrixXf & init, int grid_size, std::
 /////////////////////////////////
 
 
-void SparseCRF::submodularFrankWolfe_tree(MatrixXf & init, int grid_size, std::string log_filename, const std::vector<node> &G){
+void SparseCRF::submodularFrankWolfe_tree(MatrixXf & init, int grid_size, std::string log_filename, const std::vector<node> &G, int good){
 
     //clock
     typedef std::chrono::high_resolution_clock::time_point htime;
@@ -497,7 +497,11 @@ void SparseCRF::submodularFrankWolfe_tree(MatrixXf & init, int grid_size, std::s
 
       getNegGradient_rhst(negGrad, Q, G); //negative gradient
 
-      getConditionalGradient_tree(Qs, Q, grid_size, G);
+      if(good == 1)
+          getConditionalGradient_tree(Qs, Q, grid_size, G);
+        else if (good == 0)
+          getConditionalGradientBad_tree(Qs, Q, grid_size, G);
+
 
       assert(checkNan(negGrad) && "negGrad has nan");
       assert(checkNan(Qs) && "Qs has nan");
