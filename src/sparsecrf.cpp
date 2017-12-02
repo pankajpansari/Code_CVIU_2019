@@ -99,7 +99,12 @@ void SparseCRF::setPottsWeight(float weight) {
 void SparseCRF::setTreeWeight(Eigen::VectorXf pairwise_weight) {
     pairwise_weight_ = pairwise_weight;
 }
-/////////////////////////////////////////
+
+/////////////////////////////////
+/////  Helper functions ////
+/////////////////////////////////
+
+
 void SparseCRF::getNeighbors(int var, int grid_size, int *neighbor){ //there are grid_size*grid_size variables
 
     int var_x = var/grid_size; //row number for elem in the N X N grid
@@ -117,6 +122,71 @@ void SparseCRF::getNeighbors(int var, int grid_size, int *neighbor){ //there are
         neighbor[3] = (var_x)*grid_size + (var_y + 1);
 
 }
+/////////////////////////////////
+/////  Conditional Gradient for Optimal Potts Extension  /////
+/////////////////////////////////
+
+float SparseCRF::gridEnergyChange(int var, std::vector<int> S, int grid_size, int label){ //elem is between 0 - (NL - 1), N = grid_size ^ 2
+    
+   
+    float unary_val = unary_(label, var);
+    
+    //get pairwise change
+    float pairwise_val = 0;
+    int neighbor[4];
+    getNeighbors(var, grid_size, neighbor);
+  
+    for(int i = 0; i < 4; i++){
+        if(neighbor[i] != -1){
+            if(find(S.begin(), S.end(), neighbor[i]) != S.end()){
+               pairwise_val = pairwise_val - pairwise_weight_(label); //0.5 not required here because tree assumes that
+            }
+            else{
+               pairwise_val =  pairwise_val + pairwise_weight_(label); 
+            }
+        }
+    }
+    return unary_val + pairwise_val;
+}
+
+void SparseCRF::greedyAlgorithm(MatrixXf &out, MatrixXf &grad, int grid_size){
+
+    //negative gradient at current point is input
+    //LP solution is the output
+    
+//    cout << "Sorted grad" << endl;
+    for(int j = 0; j < grad.rows(); j++){
+        VectorXf grad_j = grad.row(j);
+
+        std::vector<int> y(grad_j.size());
+        iota(y.begin(), y.end(), 0);
+        auto comparator = [&grad_j](int a, int b){ return grad_j[a] > grad_j[b]; };
+        sort(y.begin(), y.end(), comparator);
+
+        std::sort(grad_j.data(), grad_j.data() + grad_j.size(), std::greater<float>()); 
+//        cout << grad_j << endl << endl;
+        std::vector<int> S = {};
+        for(int i = 0; i < y.size(); i++){
+            out(j, y[i]) = gridEnergyChange(y[i], S, grid_size, j);
+            S.push_back(y[i]);
+        }
+    }
+//    cout << endl << "conditional gradient = " << out << endl;
+}
+
+void SparseCRF::getConditionalGradient(MatrixXf &Qs, MatrixXf & Q, int grid_size){
+    //current solution is the input matrix (in)
+    //conditional gradient is output
+
+	MatrixXf negGrad( M_, N_ );
+	getNegGradient(negGrad, Q); //negative gradient
+
+        Qs.fill(0);
+	greedyAlgorithm(Qs, negGrad, grid_size);	
+}
+/////////////////////////////////
+/////  Conditional Gradient for Alternate Potts Extension  /////
+////////////////////////////////
 
 float SparseCRF::gridEnergyChangeBadExtension(int var, std::vector<int> S, int grid_size, int label){ //elem is between 0 - (NL - 1), N = grid_size ^ 2
     
@@ -287,64 +357,6 @@ float SparseCRF::gridEnergyChangePairwise(int var, std::vector<int> S, int grid_
     }
     return pairwise_val;
 }
-float SparseCRF::gridEnergyChange(int var, std::vector<int> S, int grid_size, int label){ //elem is between 0 - (NL - 1), N = grid_size ^ 2
-    
-   
-    float unary_val = unary_(label, var);
-    
-    //get pairwise change
-    float pairwise_val = 0;
-    int neighbor[4];
-    getNeighbors(var, grid_size, neighbor);
-  
-    for(int i = 0; i < 4; i++){
-        if(neighbor[i] != -1){
-            if(find(S.begin(), S.end(), neighbor[i]) != S.end()){
-               pairwise_val = pairwise_val - pairwise_weight_(label); //0.5 not required here because tree assumes that
-            }
-            else{
-               pairwise_val =  pairwise_val + pairwise_weight_(label); 
-            }
-        }
-    }
-    return unary_val + pairwise_val;
-}
-
-void SparseCRF::greedyAlgorithm(MatrixXf &out, MatrixXf &grad, int grid_size){
-
-    //negative gradient at current point is input
-    //LP solution is the output
-    
-//    cout << "Sorted grad" << endl;
-    for(int j = 0; j < grad.rows(); j++){
-        VectorXf grad_j = grad.row(j);
-
-        std::vector<int> y(grad_j.size());
-        iota(y.begin(), y.end(), 0);
-        auto comparator = [&grad_j](int a, int b){ return grad_j[a] > grad_j[b]; };
-        sort(y.begin(), y.end(), comparator);
-
-        std::sort(grad_j.data(), grad_j.data() + grad_j.size(), std::greater<float>()); 
-//        cout << grad_j << endl << endl;
-        std::vector<int> S = {};
-        for(int i = 0; i < y.size(); i++){
-            out(j, y[i]) = gridEnergyChange(y[i], S, grid_size, j);
-            S.push_back(y[i]);
-        }
-    }
-//    cout << endl << "conditional gradient = " << out << endl;
-}
-
-void SparseCRF::getConditionalGradient(MatrixXf &Qs, MatrixXf & Q, int grid_size){
-    //current solution is the input matrix (in)
-    //conditional gradient is output
-
-	MatrixXf negGrad( M_, N_ );
-	getNegGradient(negGrad, Q); //negative gradient
-
-        Qs.fill(0);
-	greedyAlgorithm(Qs, negGrad, grid_size);	
-}
 
 void SparseCRF::getConditionalGradientBad(MatrixXf &Qs, MatrixXf & Q, int grid_size){
     //current solution is the input matrix (in)
@@ -357,7 +369,13 @@ void SparseCRF::getConditionalGradientBad(MatrixXf &Qs, MatrixXf & Q, int grid_s
 	greedyAlgorithmBadExtension(Qs, negGrad, grid_size);	
 }
 
-void SparseCRF::getConditionalGradient_rhst(MatrixXf &Qs, MatrixXf & Q, int grid_size, const std::vector<node> &G){
+
+
+/////////////////////////////////
+/////  Conditional Gradient for Optimal Tree Extension  /////
+/////////////////////////////////
+
+void SparseCRF::getConditionalGradient_tree(MatrixXf &Qs, MatrixXf & Q, int grid_size, const std::vector<node> &G){
     //current solution is the input matrix (in)
     //conditional gradient is output
 
@@ -367,6 +385,26 @@ void SparseCRF::getConditionalGradient_rhst(MatrixXf &Qs, MatrixXf & Q, int grid
         Qs.fill(0);
 	greedyAlgorithm(Qs, negGrad, grid_size);	
 }
+
+/////////////////////////////////
+/////  Conditional Gradient for Alternate Tree Extension  /////
+/////////////////////////////////
+void SparseCRF::getConditionalGradientBad_tree(MatrixXf &Qs, MatrixXf & Q, int grid_size, const std::vector<node> &G){
+    //current solution is the input matrix (in)
+    //conditional gradient is output
+
+	MatrixXf negGrad( M_, N_ );
+	getNegGradient_rhst(negGrad, Q, G); //negative gradient
+
+        Qs.fill(0);
+	greedyAlgorithmBadExtension(Qs, negGrad, grid_size);	
+}
+
+
+
+/////////////////////////////////
+/////  Submodular Inference for Potts potentials /////
+/////////////////////////////////
 
 void SparseCRF::submodularFrankWolfe_Potts(MatrixXf & init, int grid_size, std::string log_filename, int good){
 
@@ -423,6 +461,12 @@ void SparseCRF::submodularFrankWolfe_Potts(MatrixXf & init, int grid_size, std::
     std::cout << "Upper bound = " << objVal << std::endl;
 }
 
+
+/////////////////////////////////
+/////  Submodular Inference for metric potentials /////
+/////////////////////////////////
+
+
 void SparseCRF::submodularFrankWolfe_tree(MatrixXf & init, int grid_size, std::string log_filename, const std::vector<node> &G){
 
     //clock
@@ -453,7 +497,7 @@ void SparseCRF::submodularFrankWolfe_tree(MatrixXf & init, int grid_size, std::s
 
       getNegGradient_rhst(negGrad, Q, G); //negative gradient
 
-      getConditionalGradient_rhst(Qs, Q, grid_size, G);
+      getConditionalGradient_tree(Qs, Q, grid_size, G);
 
       assert(checkNan(negGrad) && "negGrad has nan");
       assert(checkNan(Qs) && "Qs has nan");
