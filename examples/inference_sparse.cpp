@@ -20,14 +20,20 @@ int main(int argc, char *argv[]){
     int M = 20;
 
     //process command-line arguments
-    assert(argc == 3 && "example usage: ./inference_sparse unary_0.txt 1");
+    assert(argc == 4 && "example usage: ./inference_sparse unary_0.txt 1");
 
     std::string arg1(argv[1]);
 
     float weight = std::stof(argv[2]);
+    
+    int good = std::stoi(argv[3]);
 
-    std::string unary_file = "/home/pankaj/Truncated_Max_of_Convex/data/input/synthetic/unaries/" + arg1;
-    std::string log_file = "/home/pankaj/SubmodularInference/data/working/23_09_2017/synthetic_submodular_sparse/submodular_log_w_" + std::to_string(int(weight)) + "_" + arg1;
+    std::string unary_file = "/home/pankaj/SubmodularInference/data/input/unaries/" + arg1;
+    std::string log_file;
+    if(good == 1)
+        log_file = "/home/pankaj/SubmodularInference/data/working/29_11_2017/submodular_log_w_" + std::to_string(int(weight)) + "_good_" + arg1;
+    else
+        log_file = "/home/pankaj/SubmodularInference/data/working/29_11_2017/submodular_log_w_" + std::to_string(int(weight)) + "_bad_" + arg1;
  
     //create sparse crf
     SparseCRF crf(H, H, M);
@@ -42,5 +48,6 @@ int main(int argc, char *argv[]){
     
     //do inference
     std::cout << "unary: " << argv[1] << " weight: " << std::to_string(int(weight)) << std::endl; 
-    crf.submodularFrankWolfe(unary, H, log_file);
+
+    crf.submodularFrankWolfe_Potts(unary, H, log_file, good);
 }

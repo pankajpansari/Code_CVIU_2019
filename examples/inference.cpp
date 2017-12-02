@@ -15,11 +15,11 @@ void image_inference(std::string image_file, std::string unary_file, std::string
     img_size size = {-1, -1};
       
     /*if rescaling*/
-   unsigned char * img;
+    unsigned char * img;
     img = load_rescaled_image(image_file, size, 1);
     std::cout << "Image loaded" << std::endl;
 
-       MatrixXf unaries;    
+      MatrixXf unaries;    
       if(dataset_name == "MSRC"){
             unaries = load_unary_rescaled(unary_file, size, 1);
         }else if (dataset_name == "Stereo_special" || dataset_name == "Denoising"){
@@ -121,29 +121,30 @@ void image_inference(std::string image_file, std::string unary_file, std::string
 int main(int argc, char* argv[]) 
 {
     // set input, output paths and method
-    assert(argc == 12 && "All arguments not given");
+    if(argc < 11)
+        std::cout << "Usage:inference ../../data/stereo/tsukuba_left.png ../../data/stereo/unary_tsukuba.txt mf . Stereo_special 1.64 12.99 50.84 1.51 1.10 ../../data/tree/tsukuba_tree1.txt" << std::endl;
+        
     std::string image_file = argv[1];
     std::string unary_file = argv[2];
-    std::string tree_file = argv[3];
-    std::string method = argv[4];
-    std::string results_path = argv[5];
+    std::string method = argv[3];
+    std::string results_path = argv[4];
+    std::string dataset_name = argv[5];
+     float  spc_std = std::stof(argv[6]);
+     float  spc_potts = std::stof(argv[7]);
+     float  bil_spcstd = std::stof(argv[8]);
+     float  bil_colstd = std::stof(argv[9]);
+     float  bil_potts = std::stof(argv[10]);
 
-    std::string dataset_name = argv[6];
+     std::string tree_file = "";
 
-     float  spc_std = std::stof(argv[7]);
-     float  spc_potts = std::stof(argv[8]);
-     float  bil_spcstd = std::stof(argv[9]);
-     float  bil_colstd = std::stof(argv[10]);
-     float  bil_potts = std::stof(argv[11]);
-
+    if (argc == 12)
+        tree_file = argv[11];
 
     std::cout << "#COMMAND: " << argv[0] << " " << image_file << " " << unary_file << " " << method << " " 
         << results_path << " " << dataset_name << " " << spc_std << " " << spc_potts << " " << bil_spcstd << " "
         << bil_colstd << " " << bil_potts << " " << std::endl;
 
-   LP_inf_params lp_params;
-
-   image_inference(image_file, unary_file, tree_file, dataset_name, method, results_path, spc_std, spc_potts, 
+    image_inference(image_file, unary_file, tree_file, dataset_name, method, results_path, spc_std, spc_potts, 
             bil_spcstd, bil_colstd, bil_potts);
 
     return 0;

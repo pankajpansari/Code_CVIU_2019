@@ -454,6 +454,7 @@ MatrixXf load_unary_from_text(const std::string & path_to_unary, img_size& size,
             
         int row_major_var_count = j * size.width + i;
         unaries.col(row_major_var_count) = unary_current_variable;
+        //unaries.col(variable_count) =  unary_current_variable;
     }
  
 

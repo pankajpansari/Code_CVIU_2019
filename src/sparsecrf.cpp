@@ -118,6 +118,175 @@ void SparseCRF::getNeighbors(int var, int grid_size, int *neighbor){ //there are
 
 }
 
+float SparseCRF::gridEnergyChangeBadExtension(int var, std::vector<int> S, int grid_size, int label){ //elem is between 0 - (NL - 1), N = grid_size ^ 2
+    
+   
+    //get pairwise change
+    float pairwise_val = 0;
+    int neighbor[4];
+    getNeighbors(var, grid_size, neighbor);
+  
+    for(int i = 0; i < 4; i++){
+        if(neighbor[i] != -1){
+            if(find(S.begin(), S.end(), neighbor[i]) != S.end()){
+               pairwise_val = pairwise_val - pairwise_weight_(label); //0.5 not required here because tree assumes that
+            }
+            else{
+               pairwise_val =  pairwise_val + pairwise_weight_(label); 
+            }
+        }
+    }
+    return pairwise_val;
+}
+
+
+float SparseCRF::unaryChangeBadExtension(int var, int label, std::vector<int> S){
+
+    std::vector<int> st_vec(M_); // 0 -> in s, 1 -> in t
+    std::vector<int> temp(M_);  //which unary costs to add
+    float unary_cost1 = 0, unary_cost2 = 0;
+
+    //without label assigned, only S assigned
+    for(int i = 0; i <M_; i++){
+        st_vec[i] = 0;
+        temp[i] = 0;
+    }
+
+   for(int i = 0; i < S.size(); i++){
+       st_vec[S[i]] = 1;
+   }
+
+   for(int i = 0; i < st_vec.size(); i++){
+       if(i == st_vec.size() - 1){
+        if(st_vec[i] != st_vec[0]){
+           temp[i] = 1;
+        }
+       }
+       else if(st_vec[i] != st_vec[i + 1])
+           temp[i] = 1;
+      }
+
+   for(int i = 0; i < st_vec.size(); i++){
+       if(i == st_vec.size() - 1){
+        if(st_vec[i] != st_vec[0]){
+           temp[i] = 1;
+        }
+       }
+       else if(st_vec[i] != st_vec[i + 1])
+           temp[i] = 1;
+      }
+
+    for(int i = 0; i < temp.size(); i++){
+        if(temp[i] == 1)
+        unary_cost1 += unary_(i, var);
+    }
+
+    //with label and S assigned
+    for(int i = 0; i <M_; i++){
+        st_vec[i] = 0;
+        temp[i] = 0;
+    }
+
+   for(int i = 0; i < S.size(); i++){
+       st_vec[S[i]] = 1;
+   }
+       st_vec[label] = 1;
+
+   for(int i = 0; i < st_vec.size(); i++){
+       if(i == st_vec.size() - 1){
+        if(st_vec[i] != st_vec[0]){
+           temp[i] = 1;
+        }
+       }
+       else if(st_vec[i] != st_vec[i + 1])
+           temp[i] = 1;
+      }
+
+   for(int i = 0; i < st_vec.size(); i++){
+       if(i == st_vec.size() - 1){
+        if(st_vec[i] != st_vec[0]){
+           temp[i] = 1;
+        }
+       }
+       else if(st_vec[i] != st_vec[i + 1])
+           temp[i] = 1;
+      }
+
+    for(int i = 0; i < temp.size(); i++){
+        if(temp[i] == 1)
+        unary_cost2 += unary_(i, var);
+}
+   return unary_cost2 - unary_cost1;
+}
+void SparseCRF::greedyAlgorithmBadExtension(MatrixXf &out, MatrixXf &grad, int grid_size){
+
+    //negative gradient at current point is input
+    //LP solution is the output
+    
+    MatrixXf unary_out = MatrixXf::Zero(M_, N_); 
+    MatrixXf pairwise_out = MatrixXf::Zero(M_, N_);
+
+    //for unaries
+    for(int j = 0; j < grad.cols(); j++){
+        VectorXf grad_j = grad.col(j);
+
+        std::vector<int> y(grad_j.size());
+        iota(y.begin(), y.end(), 0);
+        auto comparator = [&grad_j](int a, int b){ return grad_j[a] > grad_j[b]; };
+        sort(y.begin(), y.end(), comparator);
+
+        std::sort(grad_j.data(), grad_j.data() + grad_j.size(), std::greater<float>()); 
+        std::vector<int> S = {};
+
+        for(int i = 0; i < y.size(); i++){
+            unary_out(y[i], j) = unaryChangeBadExtension(j, y[i], S);
+            S.push_back(y[i]);
+        }
+    }
+
+
+    //for pairwise
+    for(int j = 0; j < grad.rows(); j++){
+        VectorXf grad_j = grad.row(j);
+
+        std::vector<int> y(grad_j.size());
+        iota(y.begin(), y.end(), 0);
+        auto comparator = [&grad_j](int a, int b){ return grad_j[a] > grad_j[b]; };
+        sort(y.begin(), y.end(), comparator);
+
+        std::sort(grad_j.data(), grad_j.data() + grad_j.size(), std::greater<float>()); 
+        std::vector<int> S = {};
+
+        for(int i = 0; i < y.size(); i++){
+            pairwise_out(j, y[i]) = gridEnergyChangePairwise(y[i], S, grid_size, j);
+            S.push_back(y[i]);
+        }
+    }
+   
+    out = unary_out + pairwise_out;
+//    cout << endl << "conditional gradient = " << out << endl;
+}
+
+float SparseCRF::gridEnergyChangePairwise(int var, std::vector<int> S, int grid_size, int label){ //elem is between 0 - (NL - 1), N = grid_size ^ 2
+    
+   
+    //get pairwise change
+    float pairwise_val = 0;
+    int neighbor[4];
+    getNeighbors(var, grid_size, neighbor);
+  
+    for(int i = 0; i < 4; i++){
+        if(neighbor[i] != -1){
+            if(find(S.begin(), S.end(), neighbor[i]) != S.end()){
+               pairwise_val = pairwise_val - pairwise_weight_(label); //0.5 not required here because tree assumes that
+            }
+            else{
+               pairwise_val =  pairwise_val + pairwise_weight_(label); 
+            }
+        }
+    }
+    return pairwise_val;
+}
 float SparseCRF::gridEnergyChange(int var, std::vector<int> S, int grid_size, int label){ //elem is between 0 - (NL - 1), N = grid_size ^ 2
     
    
@@ -177,6 +346,17 @@ void SparseCRF::getConditionalGradient(MatrixXf &Qs, MatrixXf & Q, int grid_size
 	greedyAlgorithm(Qs, negGrad, grid_size);	
 }
 
+void SparseCRF::getConditionalGradientBad(MatrixXf &Qs, MatrixXf & Q, int grid_size){
+    //current solution is the input matrix (in)
+    //conditional gradient is output
+
+	MatrixXf negGrad( M_, N_ );
+	getNegGradient(negGrad, Q); //negative gradient
+
+        Qs.fill(0);
+	greedyAlgorithmBadExtension(Qs, negGrad, grid_size);	
+}
+
 void SparseCRF::getConditionalGradient_rhst(MatrixXf &Qs, MatrixXf & Q, int grid_size, const std::vector<node> &G){
     //current solution is the input matrix (in)
     //conditional gradient is output
@@ -188,7 +368,7 @@ void SparseCRF::getConditionalGradient_rhst(MatrixXf &Qs, MatrixXf & Q, int grid
 	greedyAlgorithm(Qs, negGrad, grid_size);	
 }
 
-void SparseCRF::submodularFrankWolfe_Potts(MatrixXf & init, int grid_size, std::string log_filename){
+void SparseCRF::submodularFrankWolfe_Potts(MatrixXf & init, int grid_size, std::string log_filename, int good){
 
     //clock
     typedef std::chrono::high_resolution_clock::time_point htime;
@@ -219,7 +399,10 @@ void SparseCRF::submodularFrankWolfe_Potts(MatrixXf & init, int grid_size, std::
 
       getNegGradient(negGrad, Q); //negative gradient
 
-      getConditionalGradient(Qs, Q, grid_size);
+      if(good == 1)
+          getConditionalGradient(Qs, Q, grid_size);
+    else if (good == 0)
+          getConditionalGradientBad(Qs, Q, grid_size);
 
       float fenchelGap = (Qs - Q).cwiseProduct(negGrad).sum();
     
@@ -236,9 +419,7 @@ void SparseCRF::submodularFrankWolfe_Potts(MatrixXf & init, int grid_size, std::
       logFile << timing << '\t' << objVal << '\t' << step << std::endl;
  //     std::cout << "Iter: " << k << " Obj = " << objVal << " Step size = " << step << " Gap = " << fenchelGap << std::endl;
       std::cout << "Iter: " << k << " Obj = " << objVal << " Step size = " << step << " Time = " << timing << " Gap = " << fenchelGap << std::endl;
-        if(fenchelGap < 1)
-            break;
-    }
+   }
     std::cout << "Upper bound = " << objVal << std::endl;
 }
 
