@@ -222,7 +222,7 @@ void PairwisePotential::apply_upper_minus_lower_ord(MatrixXf & out, const Matrix
 void PairwisePotential::apply_upper_minus_lower_ord_cont(MatrixXf & out, const MatrixXf & Q) const {
 	assert(Q.maxCoeff() <= 1);
 	assert(Q.minCoeff() >= 0);
-    out.fill(0);
+        out.fill(0);
 	kernel_->apply_upper_minus_lower_ord_cont(out, Q);
 
 //    float alpha = 0.65;     // magic constant
