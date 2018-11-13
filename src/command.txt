@@ -1,4 +1,1 @@
-./inference_denoising ./data/denoising/penguin-input.png ./data/denoising/confFileInpainting_penguin.txt mf5 . Denoising 1000 5000 4000 1000 4000
-./inference_stereo ./data/stereo/teddy.png ./data/stereo/confFileStereo_teddy.txt mf . Stereo_special 10 20 10 10 2
-./inference ../../data/stereo/tsukuba_left.png ../../data/stereo/confFileStereo_tsukuba.txt mf /home/pankaj/SubmodularInference/data/working/10_10_2017 Stereo_special 1.640000 12.990000 50.840000 1.510000 1.100000
-./inference /home/pankaj/SubmodularInference/code/denseCRF/data/new_stereo_pairs/Baby3/view1.png /home/pankaj/SubmodularInference/code/denseCRF/data/new_stereo_pairs/Baby3/unary.txt mf . Stereo_special 1.64 12.99 50.84 1.51 1.10
+./inference_higher_order /home/pankaj/SubmodularInference/higher_order/code/inference_higher_order/data/imL.png /home/pankaj/SubmodularInference/higher_order/code/inference_higher_order/data/confFileStereo_venus.txt
