@@ -119,14 +119,22 @@ void getSubmodFnVal(int j, int i, MatrixXf &unary);
 void compareWithBf(MatrixXf &pairwise_filter, MatrixXf & grad);
 MatrixXf submodularFrankWolfe_Potts(MatrixXf & init, int width, int height, std::string output_path, std::string dataset_name);
 MatrixXf submodularFrankWolfe_tree(MatrixXf & init, int width, int height, std::string output_path, std::string dataset_name, const std::vector<node> &G);
+MatrixXf submodularFrankWolfe_higher_Potts( MatrixXf & init, int width, int height, std::string output_path, std::string dataset_name);
+
+
 void getConditionalGradient(MatrixXf & Qs, MatrixXf & Q);
+void getConditionalGradient_higher_Potts(MatrixXf & Qs, MatrixXf & Q);
 void getConditionalGradient_tree(MatrixXf &Qs, MatrixXf & Q, const std::vector<node> &G);
 MatrixXf getFeatureMat(const unsigned char* im);
 //void greedyAlgorithmBruteForce(MatrixXf & Qs, MatrixXf &Q);
 void greedyAlgorithm(MatrixXf &out, MatrixXf &grad);
+void greedyAlgorithm_higher_Potts(MatrixXf &out, MatrixXf &grad);
 void greedyAlgorithm_tree(MatrixXf &out, MatrixXf &grad,  const std::vector<node> &G);
 void greedyAlgorithm_bf(MatrixXf &out, MatrixXf &grad);
 void greedyAlgorithm_dc(MatrixXf &out, MatrixXf &grad);
+MatrixXf getPairwise_higher_Potts(MatrixXf &grad);
+float delta_submodular_higher_Potts(int v, std::vector<int> S);
+float clique_energy(std::vector<int> S, int c);
 void applyBruteForce(MatrixXf & Qs, MatrixXf &Q);
 void applyBruteForceAJ(MatrixXf & Qs, MatrixXf &Q);
 void applyFilter(MatrixXf & Qs, MatrixXf &Q);

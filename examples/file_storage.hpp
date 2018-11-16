@@ -4,8 +4,22 @@
 
 #include <Eigen/Core>
 #include "color_to_label.hpp"
+#include <vector>
 
 using namespace Eigen;
+
+struct inputParameters{
+    int nvar;
+    int nlabel;
+    double M;
+    int m;
+    MatrixXf unaries; 
+    int nclique;
+    std::vector< std::vector<int> > clique_members;
+    std::vector< std::vector<int> > variable_clique_id; //which cliques does a variables belong to?
+    std::vector<double> clique_weight;
+    std::vector<int> clique_sizes;
+};
 
 struct img_size {
     int width;
@@ -120,6 +134,7 @@ MatrixXf load_unary(const std::string & path_to_unary, img_size& size, int max_l
 MatrixXf load_unary_from_text(const std::string & path_to_unary, img_size& size, int imskip);
 MatrixXf load_unary_rescaled(const std::string & path_to_unary, img_size& size, int imskip, int max_label = -1);
 void load_unary_synthetic(const std::string file_path, int nvar, int nlabel, MatrixXf &unaries);
+inputParameters load_unary_cliques(const std::string & fileName);
 void save_map(const MatrixXf & estimates, const img_size &  size,
               const std::string & path_to_output, const std::string & dataset_name);
 unsigned char *load_grayscale_image(const std::string & path_to_image, img_size & size, int imskip = 1);
@@ -137,4 +152,6 @@ void save_matrix(std::string path_to_output, MatrixXf matrix, const img_size & s
 namespace Eigen{
 void write_binary(std::string file_output, const MatrixXf& matrix);
 }
+
+
 #endif /* FILE_STORAGE_H */

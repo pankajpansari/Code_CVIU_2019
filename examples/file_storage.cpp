@@ -472,7 +472,74 @@ MatrixXf load_unary_from_text(const std::string & path_to_unary, img_size& size,
 //   return unaries;
 }
 
+inputParameters load_unary_cliques(const std::string & fileName) {
 
+    using namespace std;
+    inputParameters newInput;
+
+    fstream myfile(fileName.c_str(), std::ios_base::in);
+    
+    myfile >> newInput.nvar >> newInput.nlabel >> newInput.M >> newInput.m;
+    
+    newInput.unaries.resize(newInput.nlabel, newInput.nvar);
+    cout << "Parameters of the input file:" << endl << endl;
+    cout << "Number of variables = " << newInput.nvar << endl;
+    cout << "Number of labels = " << newInput.nlabel << endl;
+
+    cout << "M = " << newInput.M << " m =  " << newInput.m << endl;
+
+    assert(("Number of variables should be positive" &&  newInput.nvar > 0));
+    assert(("Number of labels should be positive" && newInput.nlabel > 0));
+    assert(("m should be positive" && newInput.m > 0));
+    
+    myfile.get();
+    
+    for(int variable_count = 0; variable_count < newInput.nvar; variable_count++){
+        string line;
+        getline(myfile, line);
+        istringstream iss(line);
+        float unary;
+        int count = 0;
+        while(iss >> unary){
+            newInput.unaries(count, variable_count) = unary;
+            count += 1;
+        newInput.variable_clique_id.push_back(vector<int>());
+        }
+
+    assert("One or more labels not assigned unary potential" && (int) unary_current_variable.size() == newInput.nlabel);
+    }
+    
+    float dummy;
+    myfile >> dummy; 
+
+    myfile >> newInput.nclique;
+
+    cout << "Total number of cliques = " << newInput.nclique << endl;
+
+
+    for(int clique = 0; clique < newInput.nclique; clique++){
+        int size;
+        myfile >> size;
+        assert("Clique size must be greater than 0" && size > 0);
+        newInput.clique_sizes.push_back(size);
+        vector<int> current_clique_members;
+        for(int variable_count = 0; variable_count < size; variable_count++){
+            int variable_id;
+            myfile >> variable_id;
+            assert("Variable ids must be greater than non-negative and less than total number of variables" && variable_id > 0 && variable_id <= newInput.nvar);
+            newInput.variable_clique_id[variable_id - 1].push_back(clique);
+            current_clique_members.push_back(variable_id - 1);
+        }
+        newInput.clique_members.push_back(current_clique_members);
+        double weight;
+        myfile >> weight;
+        assert("Clique weights cannot be negative" && weight >= 0);                     
+        newInput.clique_weight.push_back(weight);
+    }
+
+    myfile.close();
+    return newInput;
+}
 
 
 MatrixXf load_unary_rescaled( const std::string & path_to_unary, img_size& size, int imskip, int max_label) {

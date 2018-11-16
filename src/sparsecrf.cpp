@@ -160,6 +160,8 @@ void SparseCRF::greedyAlgorithm(MatrixXf &out, MatrixXf &grad, int grid_size){
         VectorXf grad_j = grad.row(j);
 
         std::vector<int> y(grad_j.size());
+        for(int i = 0; i < y.size(); i++)
+            y[i] = i;
         auto comparator = [&grad_j](int a, int b){ return grad_j[a] > grad_j[b]; };
         sort(y.begin(), y.end(), comparator);
 

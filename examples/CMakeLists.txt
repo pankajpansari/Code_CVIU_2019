@@ -17,9 +17,14 @@ target_link_libraries(file_storage probimage color_to_label ${OpenCV_LIBS})
 #target_link_libraries(test densecrf)
 
 # Executables
+## inference.cpp
+#add_executable(inference inference.cpp)
+#target_link_libraries(inference densecrf file_storage densecrf_utils tree_utils)
+#
 # inference.cpp
-add_executable(inference inference.cpp)
-target_link_libraries(inference densecrf file_storage densecrf_utils tree_utils)
+add_executable(inference_higher_order inference_higher_order.cpp)
+target_link_libraries(inference_higher_order densecrf file_storage densecrf_utils tree_utils)
+
 
 #add_executable(inference_tree inference_tree.cpp)
 #target_link_libraries(inference_tree densecrf file_storage densecrf_utils tree_utils)
